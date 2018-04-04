@@ -142,31 +142,18 @@ end TCL_Generic;&#13;
     <a name="clabelfont" val="SansSerif bold 16"/>
     <a name="circuitnamedbox" val="true"/>
     <a name="circuitvhdlpath" val=""/>
-    <wire from="(650,370)" to="(650,380)"/>
-    <wire from="(400,370)" to="(650,370)"/>
     <wire from="(1060,240)" to="(1060,260)"/>
-    <wire from="(240,370)" to="(240,440)"/>
     <wire from="(250,400)" to="(430,400)"/>
-    <wire from="(230,380)" to="(230,460)"/>
-    <wire from="(400,380)" to="(640,380)"/>
     <wire from="(660,320)" to="(900,320)"/>
-    <wire from="(1010,220)" to="(1310,220)"/>
     <wire from="(430,360)" to="(660,360)"/>
-    <wire from="(640,380)" to="(640,400)"/>
     <wire from="(660,320)" to="(660,360)"/>
     <wire from="(470,540)" to="(630,540)"/>
     <wire from="(600,640)" to="(630,640)"/>
     <wire from="(1060,240)" to="(1190,240)"/>
     <wire from="(650,480)" to="(650,580)"/>
-    <wire from="(230,460)" to="(250,460)"/>
     <wire from="(900,260)" to="(900,320)"/>
-    <wire from="(240,440)" to="(250,440)"/>
-    <wire from="(610,300)" to="(1060,300)"/>
-    <wire from="(1040,200)" to="(1310,200)"/>
-    <wire from="(570,340)" to="(900,340)"/>
     <wire from="(620,400)" to="(630,400)"/>
     <wire from="(640,580)" to="(650,580)"/>
-    <wire from="(620,280)" to="(1060,280)"/>
     <wire from="(630,400)" to="(630,540)"/>
     <wire from="(1310,160)" to="(1310,180)"/>
     <wire from="(130,420)" to="(250,420)"/>
@@ -177,7 +164,6 @@ end TCL_Generic;&#13;
     <wire from="(470,540)" to="(470,560)"/>
     <wire from="(250,400)" to="(250,420)"/>
     <wire from="(1190,180)" to="(1310,180)"/>
-    <wire from="(640,400)" to="(660,400)"/>
     <wire from="(640,460)" to="(660,460)"/>
     <wire from="(900,260)" to="(1060,260)"/>
     <wire from="(640,460)" to="(640,560)"/>
@@ -186,7 +172,6 @@ end TCL_Generic;&#13;
     <wire from="(430,360)" to="(430,400)"/>
     <wire from="(120,170)" to="(130,170)"/>
     <wire from="(130,170)" to="(130,420)"/>
-    <wire from="(650,380)" to="(660,380)"/>
     <wire from="(650,480)" to="(660,480)"/>
     <wire from="(130,420)" to="(130,480)"/>
     <comp lib="0" loc="(120,170)" name="Pin">
