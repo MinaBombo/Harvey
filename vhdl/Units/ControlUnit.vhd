@@ -41,6 +41,8 @@ architecture control_unit_arch of ControlUnit is
     signal is_return_s : std_logic;
 
     signal reset_fetch_decode_s : std_logic;
+
+    signal enable_pc_increment_s : std_logic;
 begin
 
     Control_Words_Rom : ControlWordsRom port map (
@@ -62,7 +64,7 @@ begin
     reset_execute_memory_out <= reset_in;
     reset_memory_writeback_out <= reset_in;
 
-    enable_pc_increment_out <= '0' when reset_fetch_decode_s = '1' -- Anded with FU output
+    enable_pc_increment_out <= '0' when reset_fetch_decode_s = '1' or  is_interrupt_s = '1' -- Anded with FU output
     else '1';
 end control_unit_arch ; -- control_unit_arch
 
