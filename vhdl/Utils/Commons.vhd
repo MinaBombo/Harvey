@@ -9,7 +9,17 @@ package Commons is
 
     constant DISABLE_WRITEBACK    : std_logic_vector(1 downto 0) := "00";
     constant ENABLE_WRITEBACK_1   : std_logic_vector(1 downto 0) := "01";
-    constant ENABLE_WRITEBACK_all : std_logic_vector(1 downto 0) := "11";
+    --constant ENABLE_WRITEBACK_2 : std_logic_vector(1 downto 0) := "10"; (Forbidden) Can't write in src without dst
+    constant ENABLE_WRITEBACK_all : std_logic_vector(1 downto 0) := "11"; -- mult
+    -- Same and deduced from above but for useful naming 
+    constant WILL_CHANGE_NOTHING : std_logic_vector(1 downto 0) := "00";
+    constant WILL_CHANGE_DST     : std_logic_vector(1 downto 0) := "01";
+    constant WILL_CHANGE_BOTH    : std_logic_vector(1 downto 0) := "11";
+
+    constant NEEDS_NOTHING : std_logic_vector(1 downto 0) := "00";
+    constant NEED_DST     : std_logic_vector(1 downto 0) := "01";
+    constant NEED_SRC     : std_logic_vector(1 downto 0) := "10";
+    constant NEED_BOTH    : std_logic_vector(1 downto 0) := "11";
 
     constant ENABLE_MEMORY  : std_logic := '1';
     constant DISABLE_MEMORY : std_logic := '0';
@@ -55,5 +65,26 @@ package Commons is
     constant ENABLE_WRITEBACK_CW_INDEX_UP  : integer := 3;
     constant INPUT_WORD_TYPE_CW_INDEX_LOW  : integer := 4;
     constant INPUT_WORD_TYPE_CW_INDEX_UP   : integer := 5;
+    
+    constant NO_STALL      : std_logic_vector(1 downto 0) := "00";
+    constant STALL_DECODE  : std_logic_vector(1 downto 0) := "01";
+    constant STALL_EXECUTE : std_logic_vector(1 downto 0) := "10";
+    -- "11" (forbidden): won't stall from any other stage 
+
+    constant DECODE_DST_NORMAL  : std_logic_vector(1 downto 0) := "00";
+    constant DECODE_DST_EXECUTE : std_logic_vector(1 downto 0) := "01";
+    constant DECODE_DST_MEMORY  : std_logic_vector(1 downto 0) := "10";
+    -- "11" (forbidden): won't take dst for decode from any other place 
+
+    constant EXECUTE_SELECT_NORMAL  : std_logic_vector(1 downto 0) := "00";
+    constant EXECUTE_SELECT_SELF    : std_logic_vector(1 downto 0) := "00";
+    constant EXECUTE_SELECT_MEMORY  : std_logic_vector(1 downto 0) := "10";
+    -- "11" (forbidden): won't take register for execute from any other place 
+
+    constant NO_FORWARD_POSSIBLE : std_logic_vector(1 downto 0) := "11";
+    -- Must be stall
+
+    constant MEMORY_SRC_NORMAL  : std_logic := '0';
+    constant MEMORY_SRC_SELF    : std_logic := '1';
 
 end package Commons;
