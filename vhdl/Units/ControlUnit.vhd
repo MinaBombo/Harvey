@@ -19,8 +19,6 @@ entity ControlUnit is
 
         stall_index_out :  out std_logic_vector(1 downto 0);
 
-        -- TODO: implement logic andmake needed changes to Forwarnind unit
-        -- regarding it's size from 2 bits to 1 bit
         decode_needs_out : out std_logic
     );
 end ControlUnit;
@@ -52,7 +50,10 @@ begin
     is_return_s <= '0' when return_reset_in = '1' else '1' when  ((opcode_in = OP_RET) or (opcode_in = OP_RTI) or (is_return_s = '1')) else '0';
     is_return_out <= is_return_s;
 
+    decode_needs_out <= '1' when opcode_in = OP_JMP
+    else '0';
+
     stall_index_out <= CU_STALL_FETCH_AND_DECODE when jump_taken_in = '1'
-    else CU_STALL_FETCH when opcode_in = OP_CALL or is_return_s = '1';
+    else CU_STALL_FETCH when opcode_in = OP_CALL or is_interrupt_s ='1' or is_return_s = '1';
 end control_unit_arch ; -- control_unit_arch
 

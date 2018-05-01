@@ -25,10 +25,11 @@ begin
     -- At stall[stage] we keep all buffers before stage as is (disable them)
     -- and flush the next buffer only (reset)
     -- reset will override enable
-    reset_fetch_decode_buffer_out <= '1' when cu_stall_stage_index_in = CU_STALL_FETCH
+    reset_fetch_decode_buffer_out <= '1' when (cu_stall_stage_index_in = CU_STALL_FETCH or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE)
     else '0';
-    reset_decode_execute_buffer_out <= '1' when fu_stall_stage_index_in = STALL_DECODE xor fu_stall_stage_index_in = STALL_DECODE
-    else 'Z' when fu_stall_stage_index_in = STALL_DECODE and fu_stall_stage_index_in = STALL_DECODE
+    reset_decode_execute_buffer_out <= '1' 
+    when (cu_stall_stage_index_in = STALL_DECODE or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) xor fu_stall_stage_index_in = STALL_DECODE
+    else 'Z' when (cu_stall_stage_index_in = STALL_DECODE or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) and fu_stall_stage_index_in = STALL_DECODE
     else '0';
     reset_execute_memory_buffer_out <= '1' when fu_stall_stage_index_in = FU_STALL_EXECUTE
     else '0';

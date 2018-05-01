@@ -103,4 +103,7 @@ package Commons is
     constant MEMORY_SRC_NORMAL  : std_logic := '0';
     constant MEMORY_SRC_SELF    : std_logic := '1';
 
+    constant COUNT_UP   : std_logic := '1';
+    constant COUNT_DOWN : std_logic := '0';
+
 end package Commons;
