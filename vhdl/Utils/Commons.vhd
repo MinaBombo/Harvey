@@ -77,9 +77,14 @@ package Commons is
     constant INPUT_WORD_TYPE_CW_INDEX_LOW  : integer := 4;
     constant INPUT_WORD_TYPE_CW_INDEX_UP   : integer := 5;
     
-    constant NO_STALL      : std_logic_vector(1 downto 0) := "00";
-    constant STALL_DECODE  : std_logic_vector(1 downto 0) := "01";
-    constant STALL_EXECUTE : std_logic_vector(1 downto 0) := "10";
+    -- Common between CU and FU
+    constant NO_STALL     : std_logic_vector(1 downto 0) := "00";
+    constant STALL_DECODE : std_logic_vector(1 downto 0) := "01";
+    -- Unique to CU
+    constant CU_STALL_FETCH            : std_logic_vector(1 downto 0) := "10";
+    constant CU_STALL_FETCH_AND_DECODE : std_logic_vector(1 downto 0) := "11";
+    -- Unique to FU
+    constant FU_STALL_EXECUTE : std_logic_vector(1 downto 0) := "10";
     -- "11" (forbidden): won't stall from any other stage 
 
     constant DECODE_DST_NORMAL  : std_logic_vector(1 downto 0) := "00";

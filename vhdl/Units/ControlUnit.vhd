@@ -14,15 +14,14 @@ entity ControlUnit is
         is_interrupt_out : out std_logic;
         is_return_out : out std_logic;
 
-        reset_fetch_decode_out : out std_logic;
-        reset_decode_execute_out : out std_logic;
-        reset_execute_memory_out : out std_logic;
-        reset_memory_writeback_out : out std_logic;
-
         enable_memory_out, memory_read_write_out : out std_logic;
         enable_writeback_out, input_word_type_out : out std_logic_vector(1 downto 0);
 
-        enable_pc_increment_out :out std_logic
+        stall_index_out :  out std_logic_vector(1 downto 0);
+
+        -- TODO: implement logic andmake needed changes to Forwarnind unit
+        -- regarding it's size from 2 bits to 1 bit
+        decode_needs_out : out std_logic
     );
 end ControlUnit;
 
@@ -39,10 +38,6 @@ architecture control_unit_arch of ControlUnit is
 
     signal is_interrupt_s : std_logic;
     signal is_return_s : std_logic;
-
-    signal reset_fetch_decode_s : std_logic;
-
-    signal enable_pc_increment_s : std_logic;
 begin
 
     Control_Words_Rom : ControlWordsRom port map (
@@ -57,14 +52,7 @@ begin
     is_return_s <= '0' when return_reset_in = '1' else '1' when  ((opcode_in = OP_RET) or (opcode_in = OP_RTI) or (is_return_s = '1')) else '0';
     is_return_out <= is_return_s;
 
-    reset_fetch_decode_s <= '1' when jump_taken_in = '1' or opcode_in = OP_CALL or is_return_s = '1' or reset_in = '1';
-    reset_fetch_decode_out <= reset_fetch_decode_s;
-
-    reset_decode_execute_out <= '1' when jump_taken_in = '1' or reset_in = '1';
-    reset_execute_memory_out <= reset_in;
-    reset_memory_writeback_out <= reset_in;
-
-    enable_pc_increment_out <= '0' when reset_fetch_decode_s = '1' or  is_interrupt_s = '1' -- Anded with FU output
-    else '1';
+    stall_index_out <= CU_STALL_FETCH_AND_DECODE when jump_taken_in = '1'
+    else CU_STALL_FETCH when opcode_in = OP_CALL or is_return_s = '1';
 end control_unit_arch ; -- control_unit_arch
 
