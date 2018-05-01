@@ -113,4 +113,7 @@ package Commons is
 
     constant SP_INITIAL_ADDRESS : std_logic_vector(15 downto 0) := x"01FF";
 
+    constant PC_STARTING_ADDRESS_INDEX : integer := 0;
+    constant PC_INTERUPT_ADDRESS_INDEX : integer := 1;
+    
 end package Commons;
