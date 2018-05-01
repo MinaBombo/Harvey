@@ -5,7 +5,7 @@ use work.Commons.all;
 
 entity ControlUnit is
     port (
-        reset_in, interrupt_in : in std_logic;
+        interrupt_in : in std_logic;
         opcode_in : in std_logic_vector(4 downto 0);
         interrupt_reset_in : in std_logic; --Comes from memory buffer
         jump_taken_in : in std_logic;
