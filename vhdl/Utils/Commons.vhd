@@ -7,6 +7,11 @@ package Commons is
     constant WORD_TYPE_IMMEDIATE         : std_logic_vector(1 downto 0) := "01";
     constant WORD_TYPE_EFFECTIVE_ADDRESS : std_logic_vector(1 downto 0) := "10";
 
+    constant OPCODE_HIGHER_LIMIT : integer := 15;
+    constant R_SRC_HIGHER_LIMIT  : integer := 10;
+    constant R_DST_HIGHER_LIMIT  : integer := 7;
+    constant R_DST_LOWER_LIMIT   : integer := 5;
+
     constant DISABLE_WRITEBACK    : std_logic_vector(1 downto 0) := "00";
     constant ENABLE_WRITEBACK_1   : std_logic_vector(1 downto 0) := "01";
     --constant ENABLE_WRITEBACK_2 : std_logic_vector(1 downto 0) := "10"; (Forbidden) Can't write in src without dst
