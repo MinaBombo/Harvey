@@ -106,4 +106,11 @@ package Commons is
     constant COUNT_UP   : std_logic := '1';
     constant COUNT_DOWN : std_logic := '0';
 
+    constant SP_NO_OP : std_logic_vector(1 downto 0) := "00";
+    constant SP_PUSH  : std_logic_vector(1 downto 0) := "01";
+    constant SP_POP   : std_logic_vector(1 downto 0) := "10";
+    -- "11" (forbidden): sp doesn't perform any more operations
+
+    constant SP_INITIAL_ADDRESS : std_logic_vector(15 downto 0) := x"01FF";
+
 end package Commons;
