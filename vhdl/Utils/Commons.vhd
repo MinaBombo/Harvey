@@ -115,5 +115,10 @@ package Commons is
 
     constant PC_STARTING_ADDRESS_INDEX : integer := 0;
     constant PC_INTERUPT_ADDRESS_INDEX : integer := 1;
+
+    constant FLAG_ZERO_INDEX     : integer := 0;
+    constant FLAG_NEGATIVE_INDEX : integer := 1;
+    constant FLAG_CARRY_INDEX    : integer := 2;
+    constant FLAG_OVERFLOW_INDEX : integer := 3;
     
 end package Commons;
