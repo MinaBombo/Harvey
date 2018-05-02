@@ -50,7 +50,7 @@ begin
     is_return_s <= '0' when return_reset_in = '1' else '1' when  ((opcode_in = OP_RET) or (opcode_in = OP_RTI) or (is_return_s = '1')) else '0';
     is_return_out <= is_return_s;
 
-    decode_needs_out <= '1' when opcode_in = OP_JMP
+    decode_needs_out <= '1' when opcode_in = OP_CALL
     else '0';
 
     stall_index_out <= CU_STALL_FETCH_AND_DECODE when jump_taken_in = '1'

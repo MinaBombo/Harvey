@@ -53,5 +53,5 @@ begin
         r_src_data_out => r_src_data_out, r_dst_data_out => r_dst_data_out
     );
 
-    --implement has and needs
+    --implement has
 end decode_stage_arch ; -- decode_stage_arch
