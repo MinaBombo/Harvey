@@ -158,20 +158,22 @@ begin
 
     execute_needs_r_src_index_s <= to_integer(unsigned(execute_needs_r_src_index_in));
 
-    execute_r_src_selection_s <= EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING or 
-    execute_needs_in = NEED_DST or last_registers_change_status_s(execute_needs_r_src_index_s) = '0' else 
-    EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_src_index_s) = '1' else 
-    EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_src_index_s) = '1' else NO_FORWARD_POSSIBLE;
+    execute_r_src_selection_s <= 
+    EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_src_index_s) = '1' 
+    else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_src_index_s) = '1' 
+    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING or execute_needs_in = NEED_DST 
+    or last_registers_change_status_s(execute_needs_r_src_index_s) = '0' or decode_has_in = HAS_ALL 
+    else NO_FORWARD_POSSIBLE;
 
 
     execute_needs_r_dst_index_s <= to_integer(unsigned(execute_needs_r_dst_index_in));
 
     execute_r_dst_selection_s <= 
-    EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING or execute_needs_in = NEED_SRC or 
+    EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_dst_index_s) = '1' 
+    else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_dst_index_s) = '1'
+    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING or execute_needs_in = NEED_SRC or 
     last_registers_change_status_s(execute_needs_r_dst_index_s) = '0' or decode_has_in = HAS_DST 
-    or decode_has_in = HAS_ALL  
-    else EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_dst_index_s) = '1' 
-    else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_dst_index_s) = '1' 
+    or decode_has_in = HAS_ALL 
     else NO_FORWARD_POSSIBLE;
 
     execute_available_s <= '0' when execute_r_src_selection_s = NO_FORWARD_POSSIBLE or 

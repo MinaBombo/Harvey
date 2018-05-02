@@ -9,7 +9,7 @@ entity ExecuteStage is
         clk_c, reset_in : in std_logic;
 
         opcode_in : in std_logic_vector(4 downto 0);
-        pc_address_in : in std_logic_vector(15 downto 0);
+        pc_address_in, in_port_data_in : in std_logic_vector(15 downto 0);
         is_interrupt_in : in std_logic;
         next_instruction_address_in : in std_logic_vector(15 downto 0);
 
@@ -24,7 +24,7 @@ entity ExecuteStage is
         r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0); -- for write back stage
         execute_needs_out, execute_has_out : out std_logic_vector(1 downto 0);  -- for FU
 
-        is_jump_taken_out : out std_logic;
+        is_jump_taken_out, is_out_instruction_out : out std_logic;
         pc_address_out : out std_logic_vector(15 downto 0)
     );
 end ExecuteStage;
@@ -108,7 +108,8 @@ begin
     mult_result_s <= std_logic_vector(unsigned(r_src_data_s) * unsigned(r_dst_data_s));
 
     r_dst_data_out <= alu_result_s when is_alu_operation_s = '1'
-    else r_src_data_s when opcode_in = OP_MOV or opcode_in = OP_IN -- source is in port
+    else r_src_data_s when opcode_in = OP_MOV 
+    else in_port_data_in when opcode_in = OP_IN -- source is in port
     else mult_result_s(15 downto 0) when opcode_in = OP_MUL
     else r_dst_data_s when opcode_in = OP_LDM -- immediate comes in dst
     else (others => 'Z');
@@ -167,5 +168,8 @@ begin
     or (opcode_in = OP_JC and flag_register_output_s(FLAG_CARRY_INDEX) = '1')
     else '0';
     pc_address_out <= r_dst_data_s;
+
+    is_out_instruction_out <= '1' when opcode_in = OP_OUT
+    else '0';
 
 end execute_stage_arch ; -- execute_stage_arch

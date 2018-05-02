@@ -53,5 +53,5 @@ begin
         r_src_data_out => r_src_data_out, r_dst_data_out => r_dst_data_out
     );
 
-    --TODO : Handle IN and out instruction, implement has
+    --implement has and needs
 end decode_stage_arch ; -- decode_stage_arch
