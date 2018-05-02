@@ -180,10 +180,8 @@ begin
     --Memory can only need src, can't need dst
     memory_needs_r_src_index_s <= to_integer(unsigned(memory_needs_r_src_index_in));
 
-    memory_r_src_selection_s <=  MEMORY_SRC_NORMAL when memory_needs_in = NEEDS_NOTHING or
-    last_registers_change_status_s(memory_needs_r_src_index_s) = '0' 
-    or current_execution_has_status_s(memory_needs_r_src_index_s) = '1'  else
-    MEMORY_SRC_SELF when current_memory_has_status_s(memory_needs_r_src_index_s) ='1';
+    memory_r_src_selection_s <=
+    MEMORY_SRC_SELF when current_memory_has_status_s(memory_needs_r_src_index_s) ='1' else MEMORY_SRC_NORMAL;
     
 
     decode_has_out <= 
@@ -198,7 +196,7 @@ begin
     execute_r_dst_selection_out <= execute_r_dst_selection_s;
     memory_r_src_selection_out  <= memory_r_src_selection_s;
 
-    stall_stage_index_out <= STALL_EXECUTE when execute_available_s = '0' 
+    stall_stage_index_out <= FU_STALL_EXECUTE when execute_available_s = '0' 
     else STALL_DECODE when decode_availble_s = '0' else NO_STALL;
     
 end forwarding_unit_arch ; -- forwarding_unit_arch

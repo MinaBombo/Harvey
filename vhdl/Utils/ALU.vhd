@@ -34,10 +34,11 @@ begin
     else std_logic_vector(unsigned('0'&data1_in) + 1) when alu_instruction_in = ALU_OP_INC
     else std_logic_vector(unsigned('0'&data1_in) - 1) when alu_instruction_in = ALU_OP_DEC
     else (others => 'Z');
+    result_out <= result_s(15 downto 0);
 
     flags_out(FLAG_ZERO_INDEX) <= 
     flags_in(FLAG_ZERO_INDEX) when alu_instruction_in = ALU_OP_NOP or alu_instruction_in = ALU_OP_SETC or alu_instruction_in = ALU_OP_CLRC
-    else '1' when  result_s = '0'&x"0000" else '0';
+    else '1' when  result_s(15 downto 0) = x"0000"  else '0';
 
     flags_out(FLAG_NEGATIVE_INDEX) <= 
     flags_in(FLAG_NEGATIVE_INDEX) when alu_instruction_in = ALU_OP_NOP or alu_instruction_in = ALU_OP_SETC or alu_instruction_in = ALU_OP_CLRC
@@ -51,9 +52,13 @@ begin
     else result_s(16);
 
     flags_out (FLAG_OVERFLOW_INDEX) <= 
-    flags_in(FLAG_OVERFLOW_INDEX) when alu_instruction_in /= ALU_OP_ADD  or  alu_instruction_in /= ALU_OP_SUB
-    else '1' when (((data1_in(15) = '0' and data2_in (15) ='0' and result_s(15) = '1') or (data1_in(15) = '1' and data2_in (15) ='1' and result_s(15) = '0'))  and alu_instruction_in = ALU_OP_ADD)
-    or ((((data1_in(15) = '0' and data2_in (15) ='1' and result_s(15) = '1') or (data1_in(15) = '1' and data2_in (15) ='0' and result_s(15) = '0'))) and alu_instruction_in = ALU_OP_SUB);
+    flags_in(FLAG_OVERFLOW_INDEX) when alu_instruction_in /= ALU_OP_ADD  and  alu_instruction_in /= ALU_OP_SUB
+    else '1' 
+    when (((data1_in(15) = '0' and data2_in (15) ='0' and result_s(15) = '1') or (data1_in(15) = '1' and data2_in (15) ='1' and result_s(15) = '0'))  
+        and alu_instruction_in = ALU_OP_ADD)
+    or ((((data1_in(15) = '0' and data2_in (15) ='1' and result_s(15) = '1') or (data1_in(15) = '1' and data2_in (15) ='0' and result_s(15) = '0'))) 
+        and alu_instruction_in = ALU_OP_SUB)
+    else '0';
 
 
 end alu_arch ; -- alu_arch

@@ -121,4 +121,6 @@ package Commons is
     constant FLAG_CARRY_INDEX    : integer := 2;
     constant FLAG_OVERFLOW_INDEX : integer := 3;
     
+    constant IN_PORT_INDEX  : std_logic_vector(2 downto 0) := "110";
+    constant OUT_PORT_INDEX : std_logic_vector(2 downto 0) := "111";
 end package Commons;
