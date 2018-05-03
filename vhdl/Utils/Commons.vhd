@@ -7,8 +7,8 @@ package Commons is
     constant WORD_TYPE_IMMEDIATE         : std_logic_vector(1 downto 0) := "01";
     constant WORD_TYPE_EFFECTIVE_ADDRESS : std_logic_vector(1 downto 0) := "10";
 
-    constant FETCHED : std_logic_vector := '1';
-    constant NOT_FETCHED : std_logic_vector := '0';
+    constant FETCHED : std_logic := '1';
+    constant NOT_FETCHED : std_logic := '0';
 
     constant OPCODE_HIGHER_LIMIT : integer := 15;
     constant R_SRC_HIGHER_LIMIT  : integer := 10;

@@ -12,7 +12,7 @@ entity MemoryStage is
        is_return_interrupt_in : in std_logic;
 
         --Memory buffer must output memory_needs
-        memory_data_src_selection_in : in std_logic;
+        memory_data_src_selection_in : in std_logic; -- From FU
         memry_address_in, data_from_execute_in, data_from_memory_in: in std_logic_vector(15 downto 0);
 
         memory_data_out, pc_address_out : out std_logic_vector(15 downto 0); -- will be put in r_dst
@@ -58,7 +58,7 @@ begin
 
     memory_data_out <= data_word_s;
 
-    pc_address_out <= x"0" & data_word_s(15 downto 6) when is_return_interrupt_in = '1'
+    pc_address_out <= "00" & x"0" & data_word_s(15 downto 6) when is_return_interrupt_in = '1'
     else data_word_s;
 
     flags_out <= data_word_s(5 downto 2);

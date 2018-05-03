@@ -20,8 +20,6 @@ entity ExecuteStage is
         memory_is_return_interrupt_in : in std_logic; -- from memory
         flags_in : in std_logic_vector(3 downto 0); --From memory
 
-
-    
         memory_address_out, memory_input_out : out std_logic_vector(15 downto 0); -- for memory stage
         memory_needs_src_out : out std_logic;
         memory_is_return_interrupt_out : out std_logic;
@@ -92,9 +90,9 @@ begin
     is_alu_operation_s <= not opcode_in(4);
     flag_register_input_s <= flags_in when memory_is_return_interrupt_in = '1' 
     else alu_flag_output_s;
-    flag_register_enable_s <= (is_alu_operation_s and enable_in) or memory_is_return_interrupt_in = '1';
+    flag_register_enable_s <= (is_alu_operation_s and enable_in) or memory_is_return_interrupt_in;
     Flags_Register : nBitRegister generic map (n=>4) port map (
-        clk_c => clk_c, enable_in => flag_register_enable_s, data_in => flag_register_input_s, 
+        clk_c => clk_c, enable_in => flag_register_enable_s,reset_in => reset_in , data_in => flag_register_input_s, 
         data_out => flag_register_output_s
     );
 
@@ -166,10 +164,11 @@ begin
 
     memory_input_out <= 
     next_instruction_address_in when opcode_in = OP_CALL
-    else pc_address_in(9 downto 0) & flag_register_output_s when is_interrupt_in = '1'
+    else pc_address_in(9 downto 0) & flag_register_output_s & "00" when is_interrupt_in = '1'
     else r_src_data_s when opcode_in = OP_PUSH or opcode_in = OP_STD
     else (others => 'Z');  
     
+
     memory_is_return_interrupt_out <= '1' when opcode_in = OP_RTI;
 
     is_jump_taken_out <= '0' when enable_in = '0'

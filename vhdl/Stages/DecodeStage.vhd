@@ -44,9 +44,10 @@ architecture decode_stage_arch of DecodeStage is
         );
     end component;
 
-    signal r_src_read_address_s, r_dst_read_address_s : std_logic_vector(2 downto 0);
-begin
+    signal r_src_read_address_s, r_dst_read_address_s : std_logic_vector(2 downto 0);	
+signal r_dst_data_s: std_logic_vector(15 downto 0);
 
+begin
     opcode_out <= instruction_in(OPCODE_HIGHER_LIMIT downto R_SRC_HIGHER_LIMIT+1) 
     when immediate_fetched_in = FETCHED else ALU_OP_NOP;
     r_src_read_address_s <= instruction_in(R_SRC_HIGHER_LIMIT downto R_DST_HIGHER_LIMIT+1);
@@ -54,7 +55,7 @@ begin
     
     pc_address_out <= r_dst_from_execute_in when call_pc_address_select_in = DECODE_DST_EXECUTE
     else r_dst_from_memory_in when call_pc_address_select_in = DECODE_DST_MEMORY
-    else r_dst_read_address_s when call_pc_address_select_in = DECODE_DST_NORMAL;
+    else r_dst_data_s when call_pc_address_select_in = DECODE_DST_NORMAL;
 
     r_src_address_out <= r_src_read_address_s;
     r_dst_address_out <= r_dst_read_address_s;
@@ -64,6 +65,7 @@ begin
         r_src_write_address_in => r_src_address_in, r_dst_write_address_in => r_dst_address_in,
         r_src_read_address_in => r_src_read_address_s, r_dst_read_address_in => r_dst_read_address_s,
         r_src_data_in => r_src_data_in, r_dst_data_in => r_dst_data_in,
-        r_src_data_out => r_src_data_out, r_dst_data_out => r_dst_data_out
+        r_src_data_out => r_src_data_out, r_dst_data_out => r_dst_data_s
     );
+    r_dst_data_out <= r_dst_data_s;
 end decode_stage_arch ; -- decode_stage_arch

@@ -1,22 +1,24 @@
 library ieee;
 use ieee.std_logic_1164.all;
+library work;
+use work.Commons.all;
 
-ntity DecodeExecuteBuffer is
+entity DecodeExecuteBuffer is
     generic (
         word_width : integer := 16
     );
     port (
-        clk_c, reset_in ,enable_in : in std_logic
+        clk_c, reset_in ,enable_in : in std_logic;
         --From Decode stage
         immediate_data_in : in std_logic_vector(15 downto 0);
         r_src_address_in, r_dst_address_in : in std_logic_vector(2 downto 0);
         r_src_data_in, r_dst_data_in : in std_logic_vector(15 downto 0);
-        opcode_in : in std
+        opcode_in : in std_logic_vector(4 downto 0);
         
         --From CU
-        input_word_type_in : in std_logic_vector(1 downto 0)
+        input_word_type_in : in std_logic_vector(1 downto 0);
         cu_is_interrupt_in : in std_logic;
-        is_return_in : in std_logic;
+        is_return_in : in std_logic; -- Pass through to MemoryBuffer to send it to the CU to reset return
         --Control Word
         enable_memory_in, memory_read_write_in : in std_logic;
         enable_writeback_in : in std_logic_vector(1 downto 0);
@@ -37,7 +39,7 @@ ntity DecodeExecuteBuffer is
         input_word_type_out : out std_logic_vector(1 downto 0);
 
         r_src_address_out, r_dst_address_out : out std_logic_vector(2 downto 0);
-        r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0);
+        r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0)
 
 
     ) ;
@@ -51,29 +53,32 @@ architecture decode_execute_buffer_arch of DecodeExecuteBuffer is
 
     signal is_interrupt_s, is_return_s : std_logic; 
     signal decode_has_s : std_logic_vector(1 downto 0);
-    signal immediate_fetched_s : std_logic_vector;
+    signal immediate_fetched_s : std_logic;
 
     signal r_src_address_s, r_dst_address_s : std_logic_vector(2 downto 0);
     signal r_src_data_s, r_dst_data_s : std_logic_vector(15 downto 0);
 
-    
 begin
-    begin
+        Interrupt_Logic : process( clk_c )
+        begin
+            if (rising_edge(clk_c)) then
+                is_interrupt_s <= cu_is_interrupt_in and last_buffer_is_interrupt_in;
+            end if;
+        end process ; -- Interrupt_Logic
+        
         Buffer_Logic : process( clk_c, reset_in )
         begin
             if (reset_in = '1') then 
                 enable_memory_s <= '0';
-                memory_read_write_s <= 0';
+                memory_read_write_s <= '0';
                 enable_writeback_s <= (others => '0');
                 input_word_type_s <= (others => '0');
                 decode_has_s <= (others => '0');
-                is_interrupt_s <= '0';
                 is_return_s <= '0';
-                immediate_fetched_s <= FETCHED
+                immediate_fetched_s <= FETCHED;
             elsif (rising_edge(clk_c)) then
-                is_interrupt_s <= cu_is_interrupt_in and last_buffer_is_interrupt_in;
                 if(input_word_type_s /= WORD_TYPE_INSTRUCTION) then
-                    immediate_fetched_s = not immediate_fetched_s;
+                    immediate_fetched_s <= not immediate_fetched_s;
                 end if;
                 if (enable_in = '1')then
                     if(immediate_fetched_s = FETCHED) then
@@ -88,7 +93,7 @@ begin
                         r_src_data_s <= r_src_data_in;
                         r_dst_data_s <= r_dst_data_in;
                     else
-                    r_dst_data_s <= immediate_data_in
+                    r_dst_data_s <= immediate_data_in;
                     end if;
                 end if;
             end if;
@@ -105,6 +110,6 @@ begin
         r_src_data_out <= r_src_data_s;
         r_dst_data_out <= r_dst_data_s;
         is_interrupt_out <= is_interrupt_s;
-        immediate_fetched_out <= immediate_fetched_s
+        immediate_fetched_out <= immediate_fetched_s;
         
 end decode_execute_buffer_arch ; -- decode_execute_buffer_arch
