@@ -17,10 +17,13 @@ entity ExecuteStage is
         r_src_data_from_execute_in, r_dst_data_from_execute_in : in std_logic_vector(15 downto 0);
         r_src_data_from_memory_in, r_dst_data_from_memory_in : in std_logic_vector(15 downto 0);
         execute_r_src_selection_in, execute_r_dst_selection_in: in std_logic_vector(1 downto 0);
+        memory_is_return_interrupt_in : in std_logic;
+        flags_in : in std_logic_vector(3 downto 0);
 
     
         memory_address_out, memory_input_out : out std_logic_vector(15 downto 0); -- for memory stage
         memory_needs_src_out : out std_logic;
+        memory_is_return_interrupt_out : out std_logic;
         r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0); -- for write back stage
         execute_needs_out, execute_has_out : out std_logic_vector(1 downto 0);  -- for FU
 
@@ -69,7 +72,7 @@ architecture execute_stage_arch of ExecuteStage is
 
     signal is_alu_operation_s : std_logic;
     signal alu_data1_s, alu_data2_s, alu_result_s : std_logic_vector(15 downto 0);
-    signal flag_register_input_s, flag_register_output_s : std_logic_vector(3 downto 0);
+    signal flag_register_input_s, flag_register_output_s, alu_flag_output_s : std_logic_vector(3 downto 0);
 
     signal mult_result_s : std_logic_vector(31 downto 0);
 
@@ -83,7 +86,10 @@ begin
         address_out => sp_address_s
     );
 
+
     is_alu_operation_s <= not opcode_in(4);
+    flag_register_input_s <= flags_in when memory_is_return_interrupt_in = '1' 
+    else alu_flag_output_s;
     Flags_Register : nBitRegister generic map (n=>4) port map (
         clk_c => clk_c, enable_in => is_alu_operation_s, data_in => flag_register_input_s, 
         data_out => flag_register_output_s
@@ -102,7 +108,7 @@ begin
     Inner_ALU : ALU port map (
         data1_in => r_src_data_s, data2_in => r_dst_data_s, flags_in => flag_register_output_s, 
         alu_instruction_in => opcode_in, 
-        result_out => alu_result_s, flags_out => flag_register_input_s
+        result_out => alu_result_s, flags_out => alu_flag_output_s
     );
 
     mult_result_s <= std_logic_vector(unsigned(r_src_data_s) * unsigned(r_dst_data_s));
@@ -160,7 +166,8 @@ begin
     else pc_address_in(9 downto 0) & flag_register_output_s when is_interrupt_in = '1'
     else r_src_data_s when opcode_in = OP_PUSH or opcode_in = OP_STD
     else (others => 'Z');  
-        
+    
+    memory_is_return_interrupt_out <= '1' when opcode_in = OP_RTI;
 
     is_jump_taken_out <= '1' when opcode_in = OP_JMP 
     or (opcode_in = OP_JZ and flag_register_output_s(FLAG_ZERO_INDEX) = '1')

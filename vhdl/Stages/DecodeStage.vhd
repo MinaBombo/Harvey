@@ -42,8 +42,12 @@ architecture decode_stage_arch of DecodeStage is
     signal r_src_read_address_s, r_dst_read_address_s : std_logic_vector(2 downto 0);
 begin
 
+    opcode_out <= instruction_in(OPCODE_HIGHER_LIMIT downto R_SRC_HIGHER_LIMIT+1);
     r_src_read_address_s <= instruction_in(R_SRC_HIGHER_LIMIT downto R_DST_HIGHER_LIMIT+1);
     r_dst_read_address_s <= instruction_in(R_DST_HIGHER_LIMIT downto R_DST_LOWER_LIMIT);
+
+    r_src_address_out <= r_src_read_address_s;
+    r_dst_address_out <= r_dst_read_address_s;
 
     Inner_Register_File : nRegistersFile generic map (n => 6, num_selection_bits => 3, register_width => 16) port map (
         clk_c => clk_c, enable1_in => enable_r_src_in, enable2_in => enable_r_dst_in, reset_in => reset_in,
@@ -52,6 +56,4 @@ begin
         r_src_data_in => r_src_data_in, r_dst_data_in => r_dst_data_in,
         r_src_data_out => r_src_data_out, r_dst_data_out => r_dst_data_out
     );
-
-    --implement has
 end decode_stage_arch ; -- decode_stage_arch

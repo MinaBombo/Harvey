@@ -10,7 +10,7 @@ entity FetchStage is
         clk_c : in std_logic;
         current_instruction_address_in : in std_logic_vector(word_width-1 downto 0);
         
-        current_instruction_address_out, data_word_out : out std_logic_vector(word_width-1 downto 0)
+        data_word_out : out std_logic_vector(word_width-1 downto 0)
     ) ;
 end FetchStage;
 
@@ -26,18 +26,16 @@ architecture fetch_stage_arch of FetchStage is
         ) ;
     end component;
 
-    signal data_word_s, instruction_address_s : std_logic_vector(word_width-1 downto 0);
+    signal instruction_address_s : std_logic_vector(word_width-1 downto 0);
 begin
     Instruction_Cache: InstructionCache generic map (word_width => word_width, cache_size => cache_size) 
-                       port map(address_in => instruction_address_s, data_word_out => data_word_s);
+                       port map(address_in => instruction_address_s, data_word_out => data_word_out);
     
-    Current_Address_Latching : process( clk_c )
+    Current_Address_Latching : process( clk_c ) -- because instructions cache doesn't latch
     begin
         if (rising_edge(clk_c)) then
             instruction_address_s <= current_instruction_address_in;
         end if;
     end process ; -- Current_Address_Latching
-    current_instruction_address_out <=instruction_address_s;
-
-    data_word_out <= data_word_s;
+    
 end fetch_stage_arch ; -- fetch_stage_arch
