@@ -4,9 +4,6 @@ library work;
 use work.Commons.all;
 
 entity DecodeExecuteBuffer is
-    generic (
-        word_width : integer := 16
-    );
     port (
         clk_c, reset_in ,enable_in : in std_logic;
         --From Decode stage

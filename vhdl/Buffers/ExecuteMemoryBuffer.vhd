@@ -15,6 +15,7 @@ entity ExecuteMemoryBuffer is
         --From Decode Execute buffer
         r_src_address_in, r_dst_address_in : in std_logic_vector(2 downto 0);
         last_buffer_is_interrupt_in : in std_logic;
+        is_return_in : in std_logic;
 
         --From CU
         cu_is_interrupt_in : in std_logic;
@@ -31,7 +32,8 @@ entity ExecuteMemoryBuffer is
         is_interrupt_out : out std_logic;
         execute_has_out :  out std_logic_vector(1 downto 0); -- GOES TO FU
         enable_memory_out ,memory_read_write_out : out std_logic;
-        enable_writeback_out : out std_logic_vector(1 downto 0)
+        enable_writeback_out : out std_logic_vector(1 downto 0);
+        is_return_out : out std_logic -- Goes to Memory buffer
     ) ;
 end ExecuteMemoryBuffer;
 
@@ -43,6 +45,7 @@ architecture execute_memory_buffer_arch of ExecuteMemoryBuffer is
     signal r_src_data_s, r_dst_data_s : std_logic_vector(15 downto 0);
     signal execute_has_s : std_logic_vector(1 downto 0);
 
+    signal is_return_s : std_logic;
     signal r_src_address_s, r_dst_address_s : std_logic_vector(2 downto 0);
 
     signal is_interrupt_s : std_logic;
@@ -104,5 +107,5 @@ begin
     enable_memory_out <= enable_memory_s;
     memory_read_write_out <= memory_read_write_s;
     enable_writeback_out <= enable_writeback_s;
-        
+    is_return_out <= is_return_s;
 end execute_memory_buffer_arch ; -- decode_execute_buffer_arch

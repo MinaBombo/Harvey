@@ -17,7 +17,7 @@ entity MemoryStage is
 
         memory_data_out, pc_address_out : out std_logic_vector(15 downto 0); -- will be put in r_dst
         flags_out : out std_logic_vector(3 downto 0);
-
+        memory_read_out: out std_logic;
         pc_starting_address_out, pc_interrupt_address_out : out  std_logic_vector(15 downto 0)
     ) ;
 end MemoryStage;
@@ -62,4 +62,5 @@ begin
     else data_word_s;
 
     flags_out <= data_word_s(5 downto 2);
+    memory_read_out <= '1' when  enable_in = ENABLE_MEMORY and memory_read_write_in = MEMORY_READ else '0';
 end memory_stage_arch ; -- memory_stage_arch
