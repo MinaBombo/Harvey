@@ -24,7 +24,7 @@ begin
     Interrupt_Logic : process( clk_c )
     begin
         if (rising_edge(clk_c)) then
-            is_interrupt_s <= not is_interrupt_in;
+            is_interrupt_s <= is_interrupt_in;
         end if;
     end process ; -- Interrupt_Logic
 
