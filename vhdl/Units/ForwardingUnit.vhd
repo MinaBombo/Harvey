@@ -12,7 +12,7 @@ entity ForwardingUnit is
         decode_r_src_index_in : in std_logic_vector(2 downto 0);
         decode_r_dst_index_in : in std_logic_vector(2 downto 0);
 
-        decode_needs_in : in std_logic_vector(1 downto 0);  -- From stage
+        decode_needs_in : in std_logic_vector(1 downto 0);  -- From CU
         decode_needs_r_dst_index_in : in std_logic_vector(2 downto 0);
 
         decode_has_in : in std_logic_vector(1 downto 0);        --Used in EU needs
@@ -31,6 +31,7 @@ entity ForwardingUnit is
 
         memory_needs_in : in std_logic_vector(1 downto 0);
         memory_needs_r_src_index_in : in std_logic_vector(2 downto 0);
+        immediate_fetched_in : in std_logic; -- From DecodeExecuteBuffer
 
         stall_stage_index_out : out std_logic_vector(1 downto 0);
 
@@ -177,7 +178,7 @@ begin
     else NO_FORWARD_POSSIBLE;
 
     execute_available_s <= '0' when execute_r_src_selection_s = NO_FORWARD_POSSIBLE or 
-    execute_r_dst_selection_s = NO_FORWARD_POSSIBLE else '1';
+    execute_r_dst_selection_s = NO_FORWARD_POSSIBLE or immediate_fetched_in = NOT_FETCHED else '1';
 
     --Memory can only need src, can't need dst
     memory_needs_r_src_index_s <= to_integer(unsigned(memory_needs_r_src_index_in));

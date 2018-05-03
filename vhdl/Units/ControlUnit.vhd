@@ -5,8 +5,8 @@ use work.Commons.all;
 
 entity ControlUnit is
     port (
-        interrupt_in : in std_logic;
-        opcode_in : in std_logic_vector(4 downto 0);
+        interrupt_in : in std_logic; -- From input
+        opcode_in : in std_logic_vector(4 downto 0); -- From decode stage
         interrupt_reset_in : in std_logic; --Comes from memory buffer
         jump_taken_in : in std_logic; --From execute Stage
         return_reset_in : in std_logic; -- From MemoryStageBuffer

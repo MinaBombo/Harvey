@@ -6,19 +6,20 @@ use work.Commons.all;
 
 entity ExecuteStage is
     port (
-        clk_c, reset_in : in std_logic;
+        clk_c, reset_in, enable_in : in std_logic;
 
         opcode_in : in std_logic_vector(4 downto 0);
         pc_address_in, in_port_data_in : in std_logic_vector(15 downto 0);
-        is_interrupt_in : in std_logic;
-        next_instruction_address_in : in std_logic_vector(15 downto 0);
+        is_interrupt_in : in std_logic; --From DecodeExecuteBuffer
+        next_instruction_address_in : in std_logic_vector(15 downto 0); -- From FetchDecode Buffer
 
         r_src_data_from_decode_in, r_dst_data_from_decode_in : in std_logic_vector(15 downto 0);
         r_src_data_from_execute_in, r_dst_data_from_execute_in : in std_logic_vector(15 downto 0);
         r_src_data_from_memory_in, r_dst_data_from_memory_in : in std_logic_vector(15 downto 0);
         execute_r_src_selection_in, execute_r_dst_selection_in: in std_logic_vector(1 downto 0);
-        memory_is_return_interrupt_in : in std_logic;
-        flags_in : in std_logic_vector(3 downto 0);
+        memory_is_return_interrupt_in : in std_logic; -- from memory
+        flags_in : in std_logic_vector(3 downto 0); --From memory
+
 
     
         memory_address_out, memory_input_out : out std_logic_vector(15 downto 0); -- for memory stage
@@ -72,6 +73,7 @@ architecture execute_stage_arch of ExecuteStage is
 
     signal is_alu_operation_s : std_logic;
     signal alu_data1_s, alu_data2_s, alu_result_s : std_logic_vector(15 downto 0);
+    signal flag_register_enable_s : std_logic;
     signal flag_register_input_s, flag_register_output_s, alu_flag_output_s : std_logic_vector(3 downto 0);
 
     signal mult_result_s : std_logic_vector(31 downto 0);
@@ -90,8 +92,9 @@ begin
     is_alu_operation_s <= not opcode_in(4);
     flag_register_input_s <= flags_in when memory_is_return_interrupt_in = '1' 
     else alu_flag_output_s;
+    flag_register_enable_s <= (is_alu_operation_s and enable_in) or memory_is_return_interrupt_in = '1';
     Flags_Register : nBitRegister generic map (n=>4) port map (
-        clk_c => clk_c, enable_in => is_alu_operation_s, data_in => flag_register_input_s, 
+        clk_c => clk_c, enable_in => flag_register_enable_s, data_in => flag_register_input_s, 
         data_out => flag_register_output_s
     );
 
@@ -169,11 +172,13 @@ begin
     
     memory_is_return_interrupt_out <= '1' when opcode_in = OP_RTI;
 
-    is_jump_taken_out <= '1' when opcode_in = OP_JMP 
+    is_jump_taken_out <= '0' when enable_in = '0'
+    else '1' when opcode_in = OP_JMP 
     or (opcode_in = OP_JZ and flag_register_output_s(FLAG_ZERO_INDEX) = '1')
     or (opcode_in = OP_JN and flag_register_output_s(FLAG_NEGATIVE_INDEX) = '1')
     or (opcode_in = OP_JC and flag_register_output_s(FLAG_CARRY_INDEX) = '1')
     else '0';
+
     pc_address_out <= r_dst_data_s;
 
     is_out_instruction_out <= '1' when opcode_in = OP_OUT

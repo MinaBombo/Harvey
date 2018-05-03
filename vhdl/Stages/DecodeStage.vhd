@@ -13,10 +13,15 @@ entity DecodeStage is
         enable_r_src_in, enable_r_dst_in : in std_logic; 
         r_src_address_in, r_dst_address_in : in std_logic_vector(2 downto 0);
         r_src_data_in, r_dst_data_in : in std_logic_vector(15 downto 0);
+        immediate_fetched_in : in std_logic; -- From Buffer After me
 
+
+        r_dst_from_execute_in, r_dst_from_memory_in : in std_logic_vector(15 downto 0);
+        call_pc_address_select_in : in std_logic_vector(1 downto 0);
         opcode_out : out  std_logic_vector(4 downto 0);
         r_src_address_out, r_dst_address_out : out std_logic_vector(2 downto 0);
-        r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0)
+        r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0);
+        pc_address_out : out  std_logic_vector(15 downto 0)
     ) ;
 end DecodeStage;
 
@@ -42,9 +47,14 @@ architecture decode_stage_arch of DecodeStage is
     signal r_src_read_address_s, r_dst_read_address_s : std_logic_vector(2 downto 0);
 begin
 
-    opcode_out <= instruction_in(OPCODE_HIGHER_LIMIT downto R_SRC_HIGHER_LIMIT+1);
+    opcode_out <= instruction_in(OPCODE_HIGHER_LIMIT downto R_SRC_HIGHER_LIMIT+1) 
+    when immediate_fetched_in = FETCHED else ALU_OP_NOP;
     r_src_read_address_s <= instruction_in(R_SRC_HIGHER_LIMIT downto R_DST_HIGHER_LIMIT+1);
     r_dst_read_address_s <= instruction_in(R_DST_HIGHER_LIMIT downto R_DST_LOWER_LIMIT);
+    
+    pc_address_out <= r_dst_from_execute_in when call_pc_address_select_in = DECODE_DST_EXECUTE
+    else r_dst_from_memory_in when call_pc_address_select_in = DECODE_DST_MEMORY
+    else r_dst_read_address_s when call_pc_address_select_in = DECODE_DST_NORMAL;
 
     r_src_address_out <= r_src_read_address_s;
     r_dst_address_out <= r_dst_read_address_s;

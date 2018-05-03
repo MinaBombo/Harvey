@@ -6,10 +6,11 @@ use work.Commons.all;
 entity StallingUnit is
     port (
         cu_stall_stage_index_in, fu_stall_stage_index_in : in std_logic_vector(1 downto 0);
-
+        
         enable_pc_inc_out : out std_logic;
         enable_fetch_decode_buffer_out, reset_fetch_decode_buffer_out : out std_logic;
         enable_decode_execute_buffer_out, reset_decode_execute_buffer_out : out std_logic;
+        enable_execute_stage : out std_logic; --Flags and jumps
         reset_execute_memory_buffer_out : out std_logic -- Will never keep value of execute
     );
 end StallingUnit;
