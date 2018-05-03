@@ -46,7 +46,7 @@ begin
     else data_from_memory_in when memory_data_src_selection_in = MEMORY_SRC_SELF
     else (others => 'Z');
 
-    memory_write_enable_s <= '1' when (enable_in =  ENABLE_MEMORY and memory_read_write_in = MEMORY_WRITE)
+    memory_write_enable_s <= '1' when enable_in =  ENABLE_MEMORY and memory_read_write_in = MEMORY_WRITE
     else '0';
 
     Data_Cache : DataCache generic map (word_width=>16,cache_size=>512) port map (

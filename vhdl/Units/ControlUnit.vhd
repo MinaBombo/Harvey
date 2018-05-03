@@ -8,18 +8,18 @@ entity ControlUnit is
         interrupt_in : in std_logic;
         opcode_in : in std_logic_vector(4 downto 0);
         interrupt_reset_in : in std_logic; --Comes from memory buffer
-        jump_taken_in : in std_logic;
-        return_reset_in : in std_logic;
+        jump_taken_in : in std_logic; --From execute Stage
+        return_reset_in : in std_logic; -- From MemoryStageBuffer
 
-        is_interrupt_out : out std_logic;
-        is_return_out : out std_logic;
+        is_interrupt_out : out std_logic; -- Goes to fetchDecodeBuffer
+        is_return_out : out std_logic; -- Goes to DecodeExecute buffer
 
-        enable_memory_out, memory_read_write_out : out std_logic;
-        enable_writeback_out, input_word_type_out : out std_logic_vector(1 downto 0);
+        enable_memory_out, memory_read_write_out : out std_logic; -- Goes to memoryStage
+        enable_writeback_out, input_word_type_out : out std_logic_vector(1 downto 0); -- Goes to memory WriteBack Buffer, fetchDecodeBuffer
 
-        stall_index_out :  out std_logic_vector(1 downto 0);
+        stall_index_out :  out std_logic_vector(1 downto 0); -- Goes to Stall unit
 
-        decode_needs_out : out std_logic
+        decode_needs_out : out std_logic -- Goes to Stall Unit
     );
 end ControlUnit;
 
