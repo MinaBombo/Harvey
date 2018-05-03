@@ -39,10 +39,10 @@ public class Assembler {
                     + "wordsperline=" + String.valueOf(WORDS_PER_LINE)
                     + "\n";
 
-    private static final Integer CHACHE_H = 512;
-    private static final Integer CHACHE_W = 16;
+    private static final Integer CHACHE_H = 512, CHACHE_W = 16;
+    private static final Integer PC_CACHE_INDEX = 0, INT_CACHE_INDEX = 1;
     private static String[] mInstructionsCache, mDataCache = new String[CHACHE_H];
-    private static int mInstructionsCacheIndex = 0, mDataCacheIndex = 0;
+    private static int mInstructionsCacheIndex = 0, mDataCacheIndex = INT_CACHE_INDEX + 1;
 
 
     BufferedReader mReader = null;
@@ -112,8 +112,20 @@ public class Assembler {
 
     private void parseFileToCaches(){
         String line;
+
+        line = reader.readLine();
+        mDataCache[PC_CACHE_INDEX]  = String.format("%016d", Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))));
+        line = reader.readLine();
+        mDataCache[INT_CACHE_INDEX] = String.format("%016d", Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))));
+
+        line = reader.readLine(); // empty line
+        line = reader.readLine(); // ; data segment
+
+        // parse data
         while ((line = reader.readLine()) != null) {
-            
+            if(line.length() != 0){
+                if()
+            }
         }   
     }
 
