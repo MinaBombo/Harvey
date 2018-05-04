@@ -20,6 +20,7 @@ entity MemoryBuffer is
         r_src_address_out, r_dst_address_out : out std_logic_vector(2 downto 0);
         is_return_out, is_interrupt_out : out std_logic;
         enable_writeback_out : out std_logic_vector(1 downto 0); -- goes also to FU
+        out_port_out : out std_logic_vector(15 downto 0);
 
         memory_has_out : out std_logic_vector(1 downto 0)
     ) ;
@@ -59,7 +60,8 @@ begin
     end process ; -- Buffer_Logic
 
     r_src_data_out <= r_src_data_s;
-    r_dst_data_out <= r_dst_data_in;
+    r_dst_data_out <= r_dst_data_s;
+    out_port_out <= r_dst_data_s when r_dst_address_s = OUT_PORT_INDEX;
     r_src_address_out <= r_src_address_s;
     r_src_address_out <= r_dst_address_s;
     is_return_out <= is_return_s;
