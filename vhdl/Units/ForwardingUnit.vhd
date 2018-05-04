@@ -12,7 +12,7 @@ entity ForwardingUnit is
         decode_r_src_index_in : in std_logic_vector(2 downto 0);
         decode_r_dst_index_in : in std_logic_vector(2 downto 0);
 
-        decode_needs_in : in std_logic_vector(1 downto 0);  -- From CU
+        decode_needs_in : in std_logic;  -- From CU
         decode_needs_r_dst_index_in : in std_logic_vector(2 downto 0);
 
         decode_has_in : in std_logic_vector(1 downto 0);        --Used in EU needs
@@ -29,7 +29,7 @@ entity ForwardingUnit is
         memory_has_r_src_index_in : in std_logic_vector(2 downto 0);
         memory_has_r_dst_index_in : in std_logic_vector(2 downto 0);
 
-        memory_needs_in : in std_logic_vector(1 downto 0);
+        memory_needs_in : in std_logic;
         memory_needs_r_src_index_in : in std_logic_vector(2 downto 0);
         immediate_fetched_in : in std_logic; -- From DecodeExecuteBuffer
 
@@ -149,7 +149,7 @@ begin
 
     decode_needs_r_dst_index_s <= to_integer(unsigned(decode_needs_r_dst_index_in));
 
-    decode_r_dst_selection_s <= DECODE_DST_NORMAL when decode_needs_in = NEEDS_NOTHING or 
+    decode_r_dst_selection_s <= DECODE_DST_NORMAL when decode_needs_in = '0' or 
     last_registers_change_status_s(decode_needs_r_dst_index_s) = '0' else DECODE_DST_EXECUTE when 
     current_execution_has_status_s(decode_needs_r_dst_index_s) = '1' else DECODE_DST_MEMORY when
     current_memory_has_status_s(decode_needs_r_dst_index_s) = '1' else NO_FORWARD_POSSIBLE;
@@ -184,7 +184,7 @@ begin
     memory_needs_r_src_index_s <= to_integer(unsigned(memory_needs_r_src_index_in));
 
     memory_r_src_selection_s <=
-    MEMORY_SRC_SELF when current_memory_has_status_s(memory_needs_r_src_index_s) ='1' else MEMORY_SRC_NORMAL;
+    MEMORY_SRC_SELF when current_memory_has_status_s(memory_needs_r_src_index_s) ='1'else MEMORY_SRC_NORMAL;
     
 
     decode_has_out <= 

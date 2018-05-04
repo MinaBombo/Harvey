@@ -9,7 +9,7 @@ entity MemoryBuffer is
         --From Execute, Memory Buffer
         r_src_data_in, r_dst_data_in : in std_logic_vector(15 downto 0);
         r_src_address_in, r_dst_address_in : in std_logic_vector(2 downto 0);
-        is_return_in, is_interrupt_in : in std_logic;
+        is_return_in, is_interrupt_in, is_out_instruction_in : in std_logic;
         enable_writeback_in : in std_logic_vector(1 downto 0);
 
         --From memory Stage
@@ -61,7 +61,7 @@ begin
 
     r_src_data_out <= r_src_data_s;
     r_dst_data_out <= r_dst_data_s;
-    out_port_out <= r_dst_data_s when r_dst_address_s = OUT_PORT_INDEX;
+    out_port_out <= r_dst_data_s when is_out_instruction_in = '1';
     r_src_address_out <= r_src_address_s;
     r_src_address_out <= r_dst_address_s;
     is_return_out <= is_return_s;

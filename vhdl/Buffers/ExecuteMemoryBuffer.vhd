@@ -16,6 +16,7 @@ entity ExecuteMemoryBuffer is
         r_src_address_in, r_dst_address_in : in std_logic_vector(2 downto 0);
         last_buffer_is_interrupt_in : in std_logic;
         is_return_in : in std_logic;
+        is_out_instruction_in : in std_logic;
 
         --From CU
         cu_is_interrupt_in : in std_logic;
@@ -33,7 +34,8 @@ entity ExecuteMemoryBuffer is
         execute_has_out :  out std_logic_vector(1 downto 0); -- GOES TO FU
         enable_memory_out ,memory_read_write_out : out std_logic;
         enable_writeback_out : out std_logic_vector(1 downto 0);
-        is_return_out : out std_logic -- Goes to Memory buffer
+        is_return_out : out std_logic; -- Goes to Memory buffer
+        is_out_instruction_out : out std_logic
     ) ;
 end ExecuteMemoryBuffer;
 
@@ -52,6 +54,8 @@ architecture execute_memory_buffer_arch of ExecuteMemoryBuffer is
 
     signal enable_memory_s, memory_read_write_s : std_logic;
     signal enable_writeback_s : std_logic_vector(1 downto 0);
+    signal is_out_instruction_s :  std_logic;
+
 
 begin
     Interrupt_Logic : process( clk_c )
@@ -76,6 +80,7 @@ begin
             enable_memory_s              <=   '0';
             memory_read_write_s          <=   '0';
             enable_writeback_s           <=   (others => '0');
+            is_out_instruction_s         <=   '0';
         elsif (rising_edge(clk_c)) then
             if (enable_in = '1') then
                 memory_address_s <= memory_address_in;
@@ -90,6 +95,7 @@ begin
                 enable_memory_s <= enable_memory_in;
                 memory_read_write_s <= memory_read_write_in;
                 enable_writeback_s <= enable_writeback_in;
+                is_out_instruction_s <= is_out_instruction_in;
             end if;
         end if;
     end process ; -- buffer_logic
@@ -108,4 +114,5 @@ begin
     memory_read_write_out <= memory_read_write_s;
     enable_writeback_out <= enable_writeback_s;
     is_return_out <= is_return_s;
+    is_out_instruction_out <= is_out_instruction_s;
 end execute_memory_buffer_arch ; -- decode_execute_buffer_arch
