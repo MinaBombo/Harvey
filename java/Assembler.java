@@ -7,9 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Scanner;
 
 public class Assembler {
 
@@ -41,16 +39,14 @@ public class Assembler {
 
     private static final Integer CHACHE_H = 512, CHACHE_W = 16;
     private static final Integer PC_CACHE_INDEX = 0, INT_CACHE_INDEX = 1;
-    private static String[] mInstructionsCache, mDataCache = new String[CHACHE_H];
+    private static String[] mInstructionsCache = new String[CHACHE_H], mDataCache = new String[CHACHE_H];
     private static int mInstructionsCacheIndex = 0, mDataCacheIndex = INT_CACHE_INDEX + 1;
-
+    private static final String INITIAL_CACHE_VALUE = String.format("%0" + CHACHE_W + "d", 0);
+    private static final String NO_REG = new String(new char[3]).replace("\0", "0");
+    private static final String NOT_USED_BITS = new String(new char[5]).replace("\0", "0");
 
     BufferedReader mReader = null;
     BufferedWriter mInstructionsWriter = null, mDataWriter = null;
-
-    /*
-    private static boolean mIsDataNext = false;
-    private static HashMap<String, Integer> mLabelsToAddr = new HashMap<String, Integer>();*/
 
     private class CompilationErrorException extends RuntimeException{
         public CompilationErrorException(String message) {
@@ -83,8 +79,8 @@ public class Assembler {
             mDataWriter.write(MEMORY_FILE_HEADER);
 
             for(int i=0; i<CHACHE_H; ++i) {
-                mInstructionsCache[i] = String.format("%0" + CHACHE_W + "d", 0);
-                mDataCache[i] = String.format("%0" + CHACHE_W + "d", 0);
+                mInstructionsCache[i] = INITIAL_CACHE_VALUE;
+                mDataCache[i] = INITIAL_CACHE_VALUE;
             }
 
             parseFileToCaches();
@@ -110,158 +106,173 @@ public class Assembler {
         }
     }
 
-    private void parseFileToCaches(){
+    private void parseFileToCaches() throws IOException{
         String line;
 
-        line = reader.readLine();
-        mDataCache[PC_CACHE_INDEX]  = String.format("%016d", Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))));
-        line = reader.readLine();
-        mDataCache[INT_CACHE_INDEX] = String.format("%016d", Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))));
+        line = mReader.readLine();
+        mDataCache[PC_CACHE_INDEX]  = String.format("%16s", 
+                Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
+                .replace(' ', '0');
+        System.out.println("PC starting address: " + mDataCache[PC_CACHE_INDEX]);
 
-        line = reader.readLine(); // empty line
-        line = reader.readLine(); // ; data segment
+        line = mReader.readLine();
+        mDataCache[INT_CACHE_INDEX] = String.format("%16s", 
+                Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
+                .replace(' ', '0');
+        System.out.println("INT address: " + mDataCache[INT_CACHE_INDEX]);
 
-        // parse data
-        while ((line = reader.readLine()) != null) {
+        while((line = mReader.readLine()) != null && line.length() == 0); // empty lines and ; data segment
+
+        // parse data segment and ; code segment
+        while ((line = mReader.readLine()) != null) {
             if(line.length() != 0){
-                if()
+                if(!Character.isDigit(line.charAt(0))){
+                    break;
+                }
+                mDataCache[mDataCacheIndex++] = String.format("%16s", 
+                        Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
+                        .replace(' ', '0');
             }
         }   
-    }
 
-    private void writeCachesToFiles(){
-        for (int i = RAM_H-1; i>=0; --i){
-            if(mRam[i].contains(".")){
-                int size = ((int) Math.pow(2, 11));
-                int addr = mLabelsToAddr.get(mRam[i].substring(7));
-                if(mRam[i].charAt(mRam[i].indexOf('.') +1 ) == 'J')
-                    writer.write(String.format("%4d", i)
-                            + ": " + mRam[i].substring(0, 5)
-                            + Integer.toBinaryString(size | addr).substring(1)
-                            +"\n");
-                else{ 
-                    String offset = Integer.toBinaryString(size | (addr -(i + 1)));
-                    if(offset.length() == 32) 
-                        offset = offset.substring(21);
-                    else
-                        offset = offset.substring(1);
-
-                    String toWrite = String.format("%4d", i)
-                    + ": " + mRam[i].substring(0, 5)
-                    + offset
-                    + "\n";
-                    writer.write(toWrite);
+        // parse code segment
+        while ((line = mReader.readLine()) != null) {
+            if(line.length() != 0){
+                if(line.charAt(0) == '.'){
+                    break;
                 }
-            } else{
-                writer.write(String.format("%4d", i)
-                            + ": " + mRam[i]+"\n");
+                for(String parsedLine : parseLine(line)){
+                    mInstructionsCache[mInstructionsCacheIndex++] = parsedLine;
+                }
             }
-        }
+        }   
+
+        // parse .addresses
+        do{
+            int index = Integer.parseInt(line.substring(1).replaceAll("\\D.*", ""));
+            while((line = mReader.readLine()) != null){
+                if(line.length() != 0){
+                    if(line.charAt(0) == '.'){
+                        break;
+                    }
+                    if(index < mInstructionsCacheIndex ){
+                        System.out.println("Writing to instruction cache in address < "
+                                + "instructions cache index : "
+                                + String.valueOf(index));
+                    }
+                    for(String parsedLine : parseLine(line)){
+                        mInstructionsCache[index++] = parsedLine;
+                    }
+                }
+            }
+        } while(line != null);
     }
-    
-    private String parseLine(String line){
+
+    private String[] parseLine(String line){
         if(line.length() == 0)
             return null;
 
-        if(line.charAt(0) == '/' ){
-            mIsDataNext = true;
-            return null;
-        }
-
-        String parts[] = line.split(":");
-        if(parts.length > 1) {
-            mLabelsToAddr.put(parts[0], mCurrAddress);
-            line = line.substring(parts[0].length() +2);
-        }
-
-        parts = line.split(" ");
-        String instr = parts[0];
-        line = line.substring(instr.length());
+        String parts[] = line.split(" ");
+        String instruction = parts[0];
+        line = line.substring(instruction.length());
         if(line.length() > 0)
             line = line.substring(1);
         String operands[] = line.split(",");
+        operands[operands.length-1] = operands[operands.length-1].split(" ")[0];
 
         return parseInstruction(parts[0], operands);
     }
 
-    private String parseOperand(String operand, int index) throws CompilationErrorException{
-        String parsedOp = "";
-        String xRange = "([0-9]" +
-                        "|[1-9][0-9]" +
-                        "|[1-9][0-9][0-9]" +
-                        "|[1-9][0-9][0-9][0-9]" +
-                        "|[1-5][0-9][0-9][0-9][0-9]" +
-                        "|6([0-4][0-9][0-9][0-9]" +
-                            "|5([0-4][0-9][0-9]" +
-                                "|5([0-2][0-9]" +
-                                    "|3[0-5]))))";
-        if(operand.matches("(?i)(r[0-3])"))
-            parsedOp +=  ADDR_MODE_DIR_REG;
-        else if(operand.matches("\\((?i)(r[0-3])\\)\\+"))
-            parsedOp += ADDR_MODE_AUTO_INC;
-        else if(operand.matches("-\\((?i)(r[0-3])\\)"))
-            parsedOp += ADDR_MODE_AUTO_DEC;
-        else if(operand.matches(xRange + "\\((?i)(r[0-3])\\)")) {
-            parsedOp += ADDR_MODE_INDEXED;
-            int x = new Scanner(operand).useDelimiter("\\D+").nextInt();
-            mX[index] = x;
-            operand = operand.substring(String.valueOf(x).length());
-        }
+    private String[] parseInstruction(String instr, String[] operands){
+        int size5  = ((int) Math.pow(2, 5));
+
+        // No operands
+        if(instr.matches("\\b(?i)(nop|(set|clr)c|r(et|ti))\\b"))
+            return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                    + NO_REG
+                    + NO_REG
+                    + NOT_USED_BITS
+            };
+
+        // Single operands in dst with NO imm or ea
+        else if(instr.matches("\\b(?i)(r[l|r]c|pop|out|in|not|[in|de]c|j[z|n|c]|jmp|call)\\b"))
+            return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                    + NO_REG
+                    + parseOperand(operands[0])
+                    + NOT_USED_BITS
+            };
+
+        // Single operands in dst with imm or ea
+        else if(instr.matches("\\b(?i)(ld[d|m])\\b"))
+            return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                    + NO_REG
+                    + parseOperand(operands[0])
+                    + NOT_USED_BITS,
+
+                    String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
+                    .replace(' ', '0')
+            };
+
+        // Single operands in src with NO imm or ea
+        else if(instr.matches("\\b(?i)(push)\\b"))
+            return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                + parseOperand(operands[0])
+                + NO_REG
+                + NOT_USED_BITS
+            };
+
+        // Single operands in src with imm or ea
+        else if(instr.matches("\\b(?i)(std)\\b"))
+            return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                + parseOperand(operands[0])
+                + NO_REG
+                + NOT_USED_BITS,
+
+                String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
+                .replace(' ', '0')
+            };
+
+        // Double operands with NO imm or ea
+        else if(instr.matches("\\b(?i)(mov|a[n|d]d|mul|sub|or)\\b"))
+            return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                    + parseOperand(operands[0])
+                    + parseOperand(operands[1])
+                    + NOT_USED_BITS
+            };
+
+        // Double operands with imm or ea
+        else if(instr.matches("\\b(?i)(sh[r|l])\\b"))
+            return new String[] { 
+                    Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
+                    + parseOperand(operands[0])
+                    + parseOperand(operands[2])
+                    + NOT_USED_BITS,
+
+                    String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
+                    .replace(' ', '0')
+            };
+
         else
-            throw new CompilationErrorException("Illegal Operand: " + operand);
+            throw new CompilationErrorException("Illegal Instruction: " + instr);
+    }
+
+    private String parseOperand(String operand) throws CompilationErrorException{
+        String parsedOp = "";
 
         int regNum = Integer.parseInt(operand.replaceAll("[\\D]", ""));
         parsedOp += Integer.toBinaryString(((int) Math.pow(2, 3)) | regNum).substring(1);
 
-        if(regNum > 3)
+        if(regNum > 5)
             throw new CompilationErrorException("Illegal Operand: " + operand);
 
         return  parsedOp;
     }
 
-    private String parseInstruction(String instr, String[] operands){
-        int size5  = ((int) Math.pow(2, 5));
-
-        // No operands
-        if(instr.matches("\\b(?i)(hlt|nop|reset|rts)\\b"))
-            return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + String.format("%0" + 11 + "d", 0);
-
-        // Branches and JSR
-        else if(instr.matches("\\b(?i)(b((l[o|s])|(h[i|s])|eq|nq|r)|jsr)\\b"))
-            return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + '.' + instr.charAt(0) + operands[0];
-
-        // Single operands
-        else if(instr.matches("\\b(?i)(bic|in[c|v]|ro[r|l]|ls[r|l]|dec|r[r|l]c|asr)\\b"))
-            return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + parseOperand(operands[0], 0)
-                    + parseOperand(operands[0], 0)
-                    + '0';
-
-        // Double operands
-        else if(instr.matches("\\b(?i)(mov|ad[d|c]|sub|sbc|and|x?or|cmp)\\b"))
-            return Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + parseOperand(operands[0], 0)
-                    + parseOperand(operands[1], 1)
-                    + '0';
-
-        // BIS = OR
-        else if(instr.matches("\\b(?i)bis\\b"))
-            return Integer.toBinaryString(size5 | Operations.indexOf("OR")).substring(1)
-                    + parseOperand(operands[0], 0)
-                    + parseOperand(operands[1], 1)
-                    + '0';
-
-        // CLR = DST XOR DST
-        else if(instr.matches("\\b(?i)clr\\b"))
-            return Integer.toBinaryString(size5 | Operations.indexOf("XOR")).substring(1)
-                    + parseOperand(operands[0], 0)
-                    + parseOperand(operands[0], 0)
-                    + '0';
-
-        else
-            throw new CompilationErrorException("Illegal Instruction: " + instr);
+    private void writeCachesToFiles() throws IOException{
+        for (int i = CHACHE_H-1; i>=0; --i){
+            mInstructionsWriter.write(String.format("%4d", i)+ ": " + mInstructionsCache[i]+"\n");
+            mDataWriter.write(String.format("%4d", i)+ ": " + mDataCache[i]+"\n");
+        }
     }
 }
 
