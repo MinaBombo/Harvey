@@ -22,6 +22,7 @@ entity DecodeExecuteBuffer is
 
         --From last buffer directly
         last_buffer_is_interrupt_in : in std_logic;
+        next_instruction_address_in : in std_logic_vector (15 downto 0);
 
         --From FU
         decode_has_in : in std_logic_vector(1 downto 0); 
@@ -36,7 +37,9 @@ entity DecodeExecuteBuffer is
         input_word_type_out : out std_logic_vector(1 downto 0);
 
         r_src_address_out, r_dst_address_out : out std_logic_vector(2 downto 0);
-        r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0)
+        r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0);
+        next_instruction_address_out : out std_logic_vector (15 downto 0);
+        opcode_out : out std_logic_vector(4 downto 0)
 
 
     ) ;
@@ -54,6 +57,8 @@ architecture decode_execute_buffer_arch of DecodeExecuteBuffer is
 
     signal r_src_address_s, r_dst_address_s : std_logic_vector(2 downto 0);
     signal r_src_data_s, r_dst_data_s : std_logic_vector(15 downto 0);
+    signal opcode_s : std_logic_vector(4 downto 0);
+    signal next_instruction_address_s : std_logic_vector (15 downto 0);
 
 begin
         Interrupt_Logic : process( clk_c )
@@ -71,6 +76,8 @@ begin
                 enable_writeback_s <= (others => '0');
                 input_word_type_s <= (others => '0');
                 decode_has_s <= (others => '0');
+                opcode_s <= (others => '0');
+                next_instruction_address_s <= (others => '0');
                 is_return_s <= '0';
                 immediate_fetched_s <= FETCHED;
             elsif (rising_edge(clk_c)) then
@@ -89,6 +96,8 @@ begin
                         r_dst_address_s <= r_dst_address_in;
                         r_src_data_s <= r_src_data_in;
                         r_dst_data_s <= r_dst_data_in;
+                        next_instruction_address_s <= next_instruction_address_in;
+                        opcode_s <= opcode_in;
                     else
                     r_dst_data_s <= immediate_data_in;
                     end if;
@@ -108,5 +117,7 @@ begin
         r_dst_data_out <= r_dst_data_s;
         is_interrupt_out <= is_interrupt_s;
         immediate_fetched_out <= immediate_fetched_s;
+        next_instruction_address_out <= next_instruction_address_s;
+        opcode_out <= opcode_s;
         
 end decode_execute_buffer_arch ; -- decode_execute_buffer_arch

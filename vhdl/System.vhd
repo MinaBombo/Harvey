@@ -107,7 +107,8 @@ architecture system_arch of System is
             input_word_type_out : out std_logic_vector(1 downto 0);
     
             r_src_address_out, r_dst_address_out : out std_logic_vector(2 downto 0);
-            r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0)
+            r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0);
+            opcode_out : out std_logic_vector(4 downto 0)
         ) ;
     end component;
 
@@ -324,7 +325,8 @@ architecture system_arch of System is
     signal decode_execute_buffer_next_input_word_type : std_logic_vector(1 downto 0);
     signal decode_execute_buffer_next_r_src_address, decode_execute_buffer_next_r_dst_address : std_logic_vector(2 downto 0);
     signal decode_execute_buffer_next_r_src_data, decode_execute_buffer_next_r_dst_data : std_logic_vector(15 downto 0);
-
+    signal decode_execute_buffer_next_op_code : std_logic_vector(4 downto 0);
+    signal su_enable_execute_stage : std_logic;
 begin
     System_PC : PC port map (
             clk_c => clk_c, reset_in => reset_in,
@@ -375,7 +377,6 @@ begin
                 last_buffer_is_interrupt_in =>fetch_decode_next_buffer_is_interrupt,        
                 --From FU
                 decode_has_in => fu_decode_execute_buffer_decode_has, 
-                --Control Word
                 enable_memory_out =>decode_execute_buffer_next_enable_memory, memory_read_write_out =>decode_execute_buffer_next_memory_read_write_out,
                 enable_writeback_out => decode_execute_buffer_next_enable_writeback,
                 is_interrupt_out => decode_execute_buffer_next_is_interrupt,is_return_out => decode_execute_buffer_next_is_return ,-- Goes to ExecuteMemoryBuffer
@@ -383,8 +384,35 @@ begin
                 immediate_fetched_out => decode_execute_buffer_immediate_fetched,-- To stall unit, decodeStage
                 input_word_type_out =>decode_execute_buffer_next_input_word_type,
                 r_src_address_out => decode_execute_buffer_next_r_src_address, r_dst_address_out => decode_execute_buffer_next_r_dst_address,
-                r_src_data_out => decode_execute_buffer_next_r_src_data, r_dst_data_out =>decode_execute_buffer_next_r_dst_data
+                r_src_data_out => decode_execute_buffer_next_r_src_data, r_dst_data_out =>decode_execute_buffer_next_r_dst_data,
+                opcode_out =>decode_execute_buffer_next_op_code
             ) ;
+
+        component ExecuteStage is
+            port (
+                clk_c => clk_c, reset_in , reset_in, enable_in => su_enable_execute_stage,
+                opcode_in => decode_execute_buffer_next_op_code,
+                pc_address_in => current_pc_address, in_port_data_in => in_port_in
+                is_interrupt_in =>decode_execute_buffer_next_is_interrupt  : in std_logic; --From DecodeExecuteBuffer
+                next_instruction_address_in =>  : in std_logic_vector(15 downto 0); -- From FetchDecode Buffer
+        
+                r_src_data_from_decode_in, r_dst_data_from_decode_in : in std_logic_vector(15 downto 0);
+                r_src_data_from_execute_in, r_dst_data_from_execute_in : in std_logic_vector(15 downto 0);
+                r_src_data_from_memory_in, r_dst_data_from_memory_in : in std_logic_vector(15 downto 0);
+                execute_r_src_selection_in, execute_r_dst_selection_in: in std_logic_vector(1 downto 0);
+                memory_is_return_interrupt_in : in std_logic; -- from memory
+                flags_in : in std_logic_vector(3 downto 0); --From memory
+        
+                memory_address_out, memory_input_out : out std_logic_vector(15 downto 0); -- for memory stage
+                memory_needs_src_out : out std_logic;
+                memory_is_return_interrupt_out : out std_logic;
+                r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0); -- for write back stage
+                execute_needs_out, execute_has_out : out std_logic_vector(1 downto 0);  -- for FU
+        
+                is_jump_taken_out, is_out_instruction_out : out std_logic;
+                pc_address_out : out std_logic_vector(15 downto 0)
+            );
+        end component;
 
 
         
