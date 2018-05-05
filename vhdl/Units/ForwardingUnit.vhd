@@ -31,14 +31,16 @@ entity ForwardingUnit is
 
         memory_needs_in : in std_logic;
         memory_needs_r_src_index_in : in std_logic_vector(2 downto 0);
-        immediate_fetched_in : in std_logic; -- From DecodeExecuteBuffer
+        immediate_fetched_in : in std_logic; -- From DecodeExecuteBuffer, It has no use now, remove it when you are sure
 
         stall_stage_index_out : out std_logic_vector(1 downto 0);
 
         decode_r_dst_selection_out : out std_logic_vector(1 downto 0);
 
         execute_r_src_selection_out : out std_logic_vector(1 downto 0);
+        execute_r_src_selection_from_r_src : out std_logic;
         execute_r_dst_selection_out : out std_logic_vector(1 downto 0);
+        execute_r_dst_selection_from_r_dst : out std_logic;
 
         --TODO Make sure there can be no stalls in anything forwarding to memrory
         memory_r_src_selection_out : out std_logic;
@@ -89,14 +91,15 @@ architecture forwarding_unit_arch of ForwardingUnit is
 
     signal decode_availble_s, execute_available_s : std_logic;
    
-    signal decode_needs_r_dst_index_s :integer;
-    signal execute_needs_r_src_index_s, execute_needs_r_dst_index_s : integer;
-    signal memory_needs_r_src_index_s : integer;
-    signal decode_r_src_index_s,decode_r_dst_index_s : integer;
-    signal write_back_has_written_src_index_s,write_back_has_written_dst_index_s : integer;
+    signal decode_needs_r_dst_index_s :integer := 0;
+    signal execute_needs_r_src_index_s, execute_needs_r_dst_index_s : integer:= 0;
+    signal memory_needs_r_src_index_s : integer:= 0;
+    signal decode_r_src_index_s,decode_r_dst_index_s : integer := 0;
+    signal write_back_has_written_src_index_s,write_back_has_written_dst_index_s : integer:= 0;
     signal decode_r_dst_selection_s : std_logic_vector(1 downto 0);
     signal execute_r_src_selection_s, execute_r_dst_selection_s : std_logic_vector(1 downto 0);
     signal memory_r_src_selection_s : std_logic;
+    signal current_decode_r_src_status_s, current_decode_r_dst_status_s, current_write_back_r_src_status_s,current_write_back_r_dst_status_s : std_logic_vector(5 downto 0) := (Others => '0');  
 
 begin
     
@@ -107,17 +110,17 @@ begin
 
     registers_change_status_register_enable_s <= '1' when  (will_change_in /= WILL_CHANGE_NOTHING or write_back_select_in /= WILL_CHANGE_NOTHING);
 
-    current_registers_change_status_s(decode_r_src_index_s) <= '1' when will_change_in = WILL_CHANGE_BOTH ; -- 1 when will_change_in = WILL_CHANGE_BOTH = "11"
-    current_registers_change_status_s(decode_r_dst_index_s) <= '1' when will_change_in /= WILL_CHANGE_NOTHING ; -- enable will be 0 if will_change = "00" otherwise will_change(dst) = '1'
+    current_decode_r_src_status_s(decode_r_src_index_s) <= '1'; --when will_change_in = WILL_CHANGE_BOTH ; -- 1 when will_change_in = WILL_CHANGE_BOTH = "11"
+    current_decode_r_dst_status_s(decode_r_dst_index_s) <= '1' when will_change_in /= WILL_CHANGE_NOTHING ; -- enable will be 0 if will_change = "00" otherwise will_change(dst) = '1'
 
-    current_registers_change_status_s(write_back_has_written_src_index_s) <= '0' 
+    current_write_back_r_src_status_s(write_back_has_written_src_index_s) <= '0' 
     when (decode_r_src_index_s /= write_back_has_written_src_index_s and  write_back_select_in = WILL_CHANGE_BOTH) 
     or (decode_r_src_index_s = write_back_has_written_src_index_s and  (will_change_in = WILL_CHANGE_NOTHING or will_change_in = WILL_CHANGE_DST));
 
-    current_registers_change_status_s(write_back_has_written_dst_index_s) <= '0' 
+    current_write_back_r_dst_status_s(write_back_has_written_dst_index_s) <= '0'
     when (decode_r_dst_index_s /= write_back_has_written_dst_index_s and write_back_select_in /= WILL_CHANGE_NOTHING) 
     or (decode_r_dst_index_s = write_back_has_written_dst_index_s  and will_change_in = WILL_CHANGE_NOTHING);
-    
+    current_registers_change_status_s <= current_decode_r_src_status_s or current_decode_r_dst_status_s or current_write_back_r_src_status_s or current_write_back_r_dst_status_s;
     Registers_Change_Status_Register : nBitRegister generic map (n => 6) port map (
         clk_c => clk_c, enable_in => registers_change_status_register_enable_s, reset_in => reset_in, 
         data_in => current_registers_change_status_s, data_out => last_registers_change_status_s);
@@ -160,25 +163,47 @@ begin
     execute_needs_r_src_index_s <= to_integer(unsigned(execute_needs_r_src_index_in));
 
     execute_r_src_selection_s <= 
+    EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING else
     EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_src_index_s) = '1' 
     else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_src_index_s) = '1' 
-    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING or execute_needs_in = NEED_DST 
+    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEED_DST 
     or last_registers_change_status_s(execute_needs_r_src_index_s) = '0' or decode_has_in = HAS_ALL 
     else NO_FORWARD_POSSIBLE;
+    
+    execute_r_src_selection_from_r_src <= 
+    '1' 
+    when execute_r_src_selection_s = EXECUTE_SELECT_NORMAL 
+    or (execute_r_src_selection_s = EXECUTE_SELECT_SELF and(execute_has_in = HAS_SRC or (execute_has_in = HAS_ALL and execute_has_r_src_index_in = execute_needs_r_src_index_in))) 
+    or (execute_r_src_selection_s = EXECUTE_SELECT_MEMORY and memory_has_in = HAS_ALL and memory_has_r_src_index_in = execute_needs_r_src_index_in)
+    else '0' 
+    when (execute_r_src_selection_s = EXECUTE_SELECT_SELF and (execute_has_in = HAS_DST or (execute_has_in = HAS_ALL and execute_has_r_dst_index_in = execute_needs_r_src_index_in)))
+    or(execute_r_src_selection_s = EXECUTE_SELECT_MEMORY and (memory_has_in = HAS_DST or (memory_has_in = HAS_ALL and memory_has_r_dst_index_in = execute_needs_r_src_index_in)))
+    else 'Z';
 
 
     execute_needs_r_dst_index_s <= to_integer(unsigned(execute_needs_r_dst_index_in));
 
     execute_r_dst_selection_s <= 
+    EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING else
     EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_dst_index_s) = '1' 
     else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_dst_index_s) = '1'
-    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING or execute_needs_in = NEED_SRC or 
+    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEED_SRC or 
     last_registers_change_status_s(execute_needs_r_dst_index_s) = '0' or decode_has_in = HAS_DST 
     or decode_has_in = HAS_ALL 
     else NO_FORWARD_POSSIBLE;
 
+    execute_r_dst_selection_from_r_dst <= 
+    '1' 
+    when execute_r_dst_selection_s = EXECUTE_SELECT_NORMAL 
+    or (execute_r_dst_selection_s = EXECUTE_SELECT_SELF and (execute_has_in = HAS_DST or (execute_has_in = HAS_ALL and execute_has_r_dst_index_in = execute_needs_r_dst_index_in)))
+    or (execute_r_dst_selection_s = EXECUTE_SELECT_MEMORY and (memory_has_in = HAS_DST or (memory_has_in = HAS_ALL and memory_has_r_dst_index_in = execute_needs_r_dst_index_in)))
+    else '0' 
+    when (execute_r_dst_selection_s = EXECUTE_SELECT_SELF and (execute_has_in = HAS_SRC or (execute_has_in = HAS_ALL and execute_has_r_src_index_in = execute_needs_r_dst_index_in)))
+    or   (execute_r_dst_selection_s = EXECUTE_SELECT_MEMORY and memory_has_in = HAS_ALL and memory_has_r_src_index_in = execute_needs_r_dst_index_in)
+    else 'Z';
+
     execute_available_s <= '0' when execute_r_src_selection_s = NO_FORWARD_POSSIBLE or 
-    execute_r_dst_selection_s = NO_FORWARD_POSSIBLE or immediate_fetched_in = NOT_FETCHED else '1';
+    execute_r_dst_selection_s = NO_FORWARD_POSSIBLE  else '1';
 
     --Memory can only need src, can't need dst
     memory_needs_r_src_index_s <= to_integer(unsigned(memory_needs_r_src_index_in));

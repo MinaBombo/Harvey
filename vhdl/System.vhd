@@ -121,25 +121,27 @@ architecture system_arch of System is
     component ExecuteStage is
         port (
             clk_c, reset_in, enable_in : in std_logic;
-    
+
             opcode_in : in std_logic_vector(4 downto 0);
             pc_address_in, in_port_data_in : in std_logic_vector(15 downto 0);
             is_interrupt_in : in std_logic; --From DecodeExecuteBuffer
             next_instruction_address_in : in std_logic_vector(15 downto 0); -- From FetchDecode Buffer
-    
+
             r_src_data_from_decode_in, r_dst_data_from_decode_in : in std_logic_vector(15 downto 0);
             r_src_data_from_execute_in, r_dst_data_from_execute_in : in std_logic_vector(15 downto 0);
             r_src_data_from_memory_in, r_dst_data_from_memory_in : in std_logic_vector(15 downto 0);
             execute_r_src_selection_in, execute_r_dst_selection_in: in std_logic_vector(1 downto 0);
             memory_is_return_interrupt_in : in std_logic; -- from memory
             flags_in : in std_logic_vector(3 downto 0); --From memory
-    
+            select_r_src_from_r_src, select_r_dst_from_r_dst : in std_logic;
+
             memory_address_out, memory_input_out : out std_logic_vector(15 downto 0); -- for memory stage
             memory_needs_src_out : out std_logic;
+            memory_has_out: out std_logic_vector(1 downto 0);
             memory_is_return_interrupt_out : out std_logic;
             r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0); -- for write back stage
             execute_needs_out, execute_has_out : out std_logic_vector(1 downto 0);  -- for FU
-    
+
             is_jump_taken_out, is_out_instruction_out : out std_logic;
             pc_address_out : out std_logic_vector(15 downto 0)
         );
@@ -152,6 +154,7 @@ architecture system_arch of System is
             --From Execute Stage
             memory_address_in, memory_input_in : in std_logic_vector(15 downto 0);
             memory_needs_src_in : in std_logic;
+            memory_has_in : in std_logic_vector (1 downto 0);
             memory_is_return_interrupt_in : in std_logic;
             r_src_data_in, r_dst_data_in : in std_logic_vector(15 downto 0);
             execute_has_in : in std_logic_vector(1 downto 0);
@@ -179,7 +182,8 @@ architecture system_arch of System is
             enable_memory_out ,memory_read_write_out : out std_logic;
             enable_writeback_out : out std_logic_vector(1 downto 0);
             is_return_out : out std_logic; -- Goes to Memory buffer
-            is_out_instruction_out : out std_logic
+            is_out_instruction_out : out std_logic;
+            memory_has_out : out std_logic_vector (1 downto 0)
         ) ;
     end component;
 
@@ -214,6 +218,7 @@ architecture system_arch of System is
         --From memory Stage
         memory_data_in : in std_logic_vector(15 downto 0);
         memory_read_enable_in : in std_logic;
+        memory_has_in : std_logic_vector(1 downto 0);
 
         r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0);
         r_src_address_out, r_dst_address_out : out std_logic_vector(2 downto 0);
@@ -271,14 +276,16 @@ architecture system_arch of System is
 
             memory_needs_in : in std_logic;
             memory_needs_r_src_index_in : in std_logic_vector(2 downto 0);
-            immediate_fetched_in : in std_logic; -- From DecodeExecuteBuffer
+            immediate_fetched_in : in std_logic; -- From DecodeExecuteBuffer, It has no use now, remove it when you are sure
 
             stall_stage_index_out : out std_logic_vector(1 downto 0);
 
             decode_r_dst_selection_out : out std_logic_vector(1 downto 0);
 
             execute_r_src_selection_out : out std_logic_vector(1 downto 0);
+            execute_r_src_selection_from_r_src : out std_logic;
             execute_r_dst_selection_out : out std_logic_vector(1 downto 0);
+            execute_r_dst_selection_from_r_dst : out std_logic;
 
             --TODO Make sure there can be no stalls in anything forwarding to memrory
             memory_r_src_selection_out : out std_logic;
@@ -286,7 +293,6 @@ architecture system_arch of System is
 
             write_back_has_written_src_index_in,write_back_has_written_dst_index_in : in std_logic_vector(2 downto 0);
             write_back_select_in : in std_logic_vector(1 downto 0)
-
     
         );
     end component;
@@ -294,6 +300,7 @@ architecture system_arch of System is
         port (
             cu_stall_stage_index_in, fu_stall_stage_index_in : in std_logic_vector(1 downto 0);
             global_reset_in : in std_logic;
+            immediate_fetched_in : in std_logic;
             enable_pc_inc_out : out std_logic;
             enable_fetch_decode_buffer_out, reset_fetch_decode_buffer_out : out std_logic;
             enable_decode_execute_buffer_out, reset_decode_execute_buffer_out : out std_logic;
@@ -360,6 +367,8 @@ architecture system_arch of System is
     signal cu_su_stall_index,fu_su_stall_index : std_logic_vector(1 downto 0);
     signal cu_fu_decode_needs : std_logic;
     signal execute_memory_buffer_next_is_out_instruction : std_logic;
+    signal fu_execute_select_r_src_from_r_src, fu_execute_select_r_dst_from_r_dst : std_logic;
+    signal eu_next_buffer_memory_has, execute_memory_buffer_next_memory_has : std_logic_vector(1 downto 0);
 begin
     System_PC : PC port map (
             clk_c => clk_c, reset_in => reset_in,
@@ -407,7 +416,7 @@ begin
                 cu_is_interrupt_in => cu_buffers_is_interrupt, is_return_in => cu_is_return, --TODO : Make sure that is return acts in a right way
                 --Control Word
                 enable_memory_in => cu_enable_memory, memory_read_write_in => cu_memory_read_write, enable_writeback_in => cu_enable_write_back,
-                last_buffer_is_interrupt_in =>fetch_decode_next_buffer_is_interrupt,        
+                last_buffer_is_interrupt_in =>fetch_decode_next_buffer_is_interrupt, next_instruction_address_in => fetch_decode_next_buffers_pc,     
                 --From FU
                 decode_has_in => fu_decode_execute_buffer_decode_has, 
                 enable_memory_out =>decode_execute_buffer_next_enable_memory, memory_read_write_out =>decode_execute_buffer_next_memory_read_write_out,
@@ -429,13 +438,16 @@ begin
                 next_instruction_address_in => decode_execute_buffer_next_instruction_address,
         
                 r_src_data_from_decode_in => decode_execute_buffer_next_r_src_data, r_dst_data_from_decode_in => decode_execute_buffer_next_r_dst_data,
-                r_src_data_from_execute_in => execute_memory_buffer_r_dst_data, 
-                r_dst_data_from_execute_in => execute_memory_buffer_r_src_data,
+                r_src_data_from_execute_in => execute_memory_buffer_r_src_data, 
+                r_dst_data_from_execute_in => execute_memory_buffer_r_dst_data,
                 r_src_data_from_memory_in => memory_buffer_r_src, r_dst_data_from_memory_in => memory_buffer_r_dst,
                 execute_r_src_selection_in => fu_execute_r_src_selection, execute_r_dst_selection_in => fu_execute_r_dst_selection,
+                
                 memory_is_return_interrupt_in => memory_eu_is_interrupt_return, flags_in => memory_eu_flags,
+                 select_r_src_from_r_src => fu_execute_select_r_src_from_r_src, select_r_dst_from_r_dst => fu_execute_select_r_dst_from_r_dst,
                 memory_address_out => eu_next_buffer_memory_address, memory_input_out => eu_next_buffer_memory_input,
                 memory_needs_src_out => eu_next_buffer_memory_needs_src,
+                memory_has_out => eu_next_buffer_memory_has,
                 memory_is_return_interrupt_out => eu_next_buffer_memory_is_return_interrupt,
                 r_src_data_out => execute_next_buffer_r_src_data, r_dst_data_out =>execute_next_buffer_r_dst_data,
                 execute_needs_out => eu_fu_execute_needs, execute_has_out => eu_next_buffer_execute_has,
@@ -447,7 +459,7 @@ begin
             clk_c => clk_c, reset_in => su_execute_memory_buffer_reset ,enable_in => '1', --TODO: Make sure that it always is enabled
             --From Execute Stage
             memory_address_in => eu_next_buffer_memory_address, memory_input_in =>eu_next_buffer_memory_input,
-            memory_needs_src_in => eu_next_buffer_memory_needs_src,
+            memory_needs_src_in => eu_next_buffer_memory_needs_src,memory_has_in => eu_next_buffer_memory_has,
             memory_is_return_interrupt_in => eu_next_buffer_memory_is_return_interrupt,
             r_src_data_in => execute_next_buffer_r_src_data, r_dst_data_in => execute_next_buffer_r_dst_data,
             execute_has_in => eu_next_buffer_execute_has,is_out_instruction_in => eu_next_buffer_is_out_instruction,
@@ -472,7 +484,8 @@ begin
             execute_has_out => execute_memory_buffer_fu_execute_has,-- GOES TO FU
             enable_memory_out => execute_memory_buffer_next_enable_memory ,memory_read_write_out => execute_memory_buffer_next_memory_read_write,
             enable_writeback_out => execute_memory_buffer_enable_write_back,
-            is_return_out => memory_pc_is_return,is_out_instruction_out =>execute_memory_buffer_next_is_out_instruction  -- Goes to Memory buffer and pc
+            is_return_out => memory_pc_is_return,is_out_instruction_out =>execute_memory_buffer_next_is_out_instruction,  -- Goes to Memory buffer and pc
+            memory_has_out => execute_memory_buffer_next_memory_has
         ) ;
         
 
@@ -503,6 +516,7 @@ begin
             --From memory Stage
             memory_data_in => memory_next_buffer_memory_data,
             memory_read_enable_in => memory_next_buffer_memory_read_enable,
+            memory_has_in => execute_memory_buffer_next_memory_has,
 
             r_src_data_out => memory_buffer_r_src, r_dst_data_out => memory_buffer_r_dst,
             r_src_address_out => memory_buffer_r_src_address, r_dst_address_out =>memory_buffer_r_dst_address,
@@ -549,7 +563,7 @@ begin
             execute_needs_r_src_index_in => decode_execute_buffer_next_r_src_address,
             execute_needs_r_dst_index_in => decode_execute_buffer_next_r_dst_address,
     
-            memory_has_in => HAS_ALL,
+            memory_has_in => memory_fu_memory_has,
             memory_has_r_src_index_in => memory_buffer_r_src_address,
             memory_has_r_dst_index_in => memory_buffer_r_dst_address,
     
@@ -563,6 +577,8 @@ begin
     
             execute_r_src_selection_out => fu_execute_r_src_selection,
             execute_r_dst_selection_out => fu_execute_r_dst_selection,
+            execute_r_src_selection_from_r_src => fu_execute_select_r_src_from_r_src,
+            execute_r_dst_selection_from_r_dst => fu_execute_select_r_dst_from_r_dst,
     
             --TODO Make sure there can be no stalls in anything forwarding to memrory
             memory_r_src_selection_out => fu_memory_src_selection,
@@ -574,7 +590,7 @@ begin
 
         System_Stall_Unit : StallingUnit port map (
             cu_stall_stage_index_in => cu_su_stall_index, fu_stall_stage_index_in => fu_su_stall_index,
-            global_reset_in => reset_in,
+            global_reset_in => reset_in,immediate_fetched_in => decode_execute_buffer_immediate_fetched,
             enable_pc_inc_out => su_pc_enable_pc_increment,
             enable_fetch_decode_buffer_out => su_fetch_decode_buffer_enable, reset_fetch_decode_buffer_out => su_fetch_decode_buffer_reset,
             enable_decode_execute_buffer_out => su_decode_execute_buffer_enable, reset_decode_execute_buffer_out => su_decode_execute_buffer_reset,

@@ -7,12 +7,13 @@ entity StallingUnit is
     port (
         cu_stall_stage_index_in, fu_stall_stage_index_in : in std_logic_vector(1 downto 0);
         global_reset_in : in std_logic;
+        immediate_fetched_in : in std_logic;
+        
         enable_pc_inc_out : out std_logic;
         enable_fetch_decode_buffer_out, reset_fetch_decode_buffer_out : out std_logic;
         enable_decode_execute_buffer_out, reset_decode_execute_buffer_out : out std_logic;
         enable_execute_stage : out std_logic; --Flags and jumps
-        reset_execute_memory_buffer_out : out std_logic; -- Will never keep value of execute
-        reset_memory_write_back_buffer_out : out std_logic
+        reset_execute_memory_buffer_out : out std_logic -- Will never keep value of execute
     );
 end StallingUnit;
 
@@ -33,10 +34,10 @@ begin
     when (((cu_stall_stage_index_in = STALL_DECODE or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) xor fu_stall_stage_index_in = STALL_DECODE) or global_reset_in = '1')
     else 'Z' when (cu_stall_stage_index_in = STALL_DECODE or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) and fu_stall_stage_index_in = STALL_DECODE
     else '0';
-    reset_execute_memory_buffer_out <= '1' when fu_stall_stage_index_in = FU_STALL_EXECUTE or global_reset_in = '1'
-    else '0';
+    reset_execute_memory_buffer_out <= '1' when fu_stall_stage_index_in = FU_STALL_EXECUTE or global_reset_in = '1'or immediate_fetched_in = NOT_FETCHED
+    else '0' ;
+    enable_execute_stage <= '0' when fu_stall_stage_index_in = FU_STALL_EXECUTE or immediate_fetched_in = NOT_FETCHED else '1';
     enable_decode_execute_buffer_out <= '0' when fu_stall_stage_index_in = FU_STALL_EXECUTE
     else '1';
-    reset_memory_write_back_buffer_out <= global_reset_in;
 end stalling_unit_arch ; -- stalling_unit_arch
 

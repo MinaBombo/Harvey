@@ -54,6 +54,6 @@ begin
     else '0';
 
     stall_index_out <= CU_STALL_FETCH_AND_DECODE when jump_taken_in = '1'
-    else CU_STALL_FETCH when opcode_in = OP_CALL or is_interrupt_s ='1' or is_return_s = '1';
+    else CU_STALL_FETCH when opcode_in = OP_CALL or is_interrupt_s ='1' or is_return_s = '1'else NO_STALL;
 end control_unit_arch ; -- control_unit_arch
 

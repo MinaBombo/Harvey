@@ -57,7 +57,7 @@ architecture control_words_rom_arch of ControlWordsRom is
         30 => WORD_TYPE_EFFECTIVE_ADDRESS & ENABLE_WRITEBACK_1 & ENABLE_MEMORY & MEMORY_READ,
         31 => WORD_TYPE_EFFECTIVE_ADDRESS & DISABLE_WRITEBACK & ENABLE_MEMORY & MEMORY_WRITE
     );     
-    signal index_s : integer;
+    signal index_s : integer := 0;
 begin
     
     index_s <= to_integer(unsigned(opcode_in));

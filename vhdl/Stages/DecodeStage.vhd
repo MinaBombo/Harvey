@@ -54,8 +54,8 @@ architecture decode_stage_arch of DecodeStage is
 begin
     opcode_out <= instruction_in(OPCODE_HIGHER_LIMIT downto R_SRC_HIGHER_LIMIT+1) 
     when immediate_fetched_in = FETCHED else ALU_OP_NOP;
-    r_src_read_address_s <= instruction_in(R_SRC_HIGHER_LIMIT downto R_DST_HIGHER_LIMIT+1);
-    r_dst_read_address_s <= instruction_in(R_DST_HIGHER_LIMIT downto R_DST_LOWER_LIMIT);
+    r_src_read_address_s <= instruction_in(R_SRC_HIGHER_LIMIT downto R_DST_HIGHER_LIMIT+1) when immediate_fetched_in = FETCHED else (others => '0');
+    r_dst_read_address_s <= instruction_in(R_DST_HIGHER_LIMIT downto R_DST_LOWER_LIMIT) when immediate_fetched_in = FETCHED else (others => '0') ;
     
     pc_address_out <= r_dst_from_execute_in when call_pc_address_select_in = DECODE_DST_EXECUTE
     else r_dst_from_memory_in when call_pc_address_select_in = DECODE_DST_MEMORY
@@ -74,4 +74,5 @@ begin
         r_src_data_out => r_src_data_out, r_dst_data_out => r_dst_data_s
     );
     r_dst_data_out <= r_dst_data_s;
+    immediate_data_out <= instruction_in;
 end decode_stage_arch ; -- decode_stage_arch

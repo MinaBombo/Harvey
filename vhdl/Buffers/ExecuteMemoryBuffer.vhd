@@ -8,6 +8,7 @@ entity ExecuteMemoryBuffer is
         --From Execute Stage
         memory_address_in, memory_input_in : in std_logic_vector(15 downto 0);
         memory_needs_src_in : in std_logic;
+        memory_has_in : in std_logic_vector (1 downto 0);
         memory_is_return_interrupt_in : in std_logic;
         r_src_data_in, r_dst_data_in : in std_logic_vector(15 downto 0);
         execute_has_in : in std_logic_vector(1 downto 0);
@@ -35,7 +36,8 @@ entity ExecuteMemoryBuffer is
         enable_memory_out ,memory_read_write_out : out std_logic;
         enable_writeback_out : out std_logic_vector(1 downto 0);
         is_return_out : out std_logic; -- Goes to Memory buffer
-        is_out_instruction_out : out std_logic
+        is_out_instruction_out : out std_logic;
+        memory_has_out : out std_logic_vector (1 downto 0)
     ) ;
 end ExecuteMemoryBuffer;
 
@@ -55,7 +57,7 @@ architecture execute_memory_buffer_arch of ExecuteMemoryBuffer is
     signal enable_memory_s, memory_read_write_s : std_logic;
     signal enable_writeback_s : std_logic_vector(1 downto 0);
     signal is_out_instruction_s :  std_logic;
-
+    signal memory_has_s : std_logic_vector(1 downto 0);
 
 begin
     Interrupt_Logic : process( clk_c )
@@ -80,8 +82,10 @@ begin
             enable_memory_s              <=   '0';
             memory_read_write_s          <=   '0';
             enable_writeback_s           <=   (others => '0');
+            memory_has_s                 <=   (others => '0'); 
             is_out_instruction_s         <=   '0';
-        elsif (rising_edge(clk_c)) then
+        end if;
+        if (rising_edge(clk_c)) then
             if (enable_in = '1') then
                 memory_address_s <= memory_address_in;
                 memory_input_s <= memory_input_in;
@@ -96,6 +100,7 @@ begin
                 memory_read_write_s <= memory_read_write_in;
                 enable_writeback_s <= enable_writeback_in;
                 is_out_instruction_s <= is_out_instruction_in;
+                memory_has_s <= memory_has_in;
             end if;
         end if;
     end process ; -- buffer_logic
@@ -107,7 +112,7 @@ begin
     r_src_data_out <= r_src_data_s;
     r_dst_data_out <= r_dst_data_s;
     r_src_address_out <= r_src_address_s;
-    r_dst_address_out <= r_dst_address_in;
+    r_dst_address_out <= r_dst_address_s;
     execute_has_out <= execute_has_in;
     is_interrupt_out <= is_interrupt_s;
     enable_memory_out <= enable_memory_s;
@@ -115,4 +120,5 @@ begin
     enable_writeback_out <= enable_writeback_s;
     is_return_out <= is_return_s;
     is_out_instruction_out <= is_out_instruction_s;
+    memory_has_out <= memory_has_s;
 end execute_memory_buffer_arch ; -- decode_execute_buffer_arch

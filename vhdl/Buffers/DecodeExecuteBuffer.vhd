@@ -67,7 +67,8 @@ begin
                 is_interrupt_s <= cu_is_interrupt_in and last_buffer_is_interrupt_in;
             end if;
         end process ; -- Interrupt_Logic
-        
+
+
         Buffer_Logic : process( clk_c, reset_in )
         begin
             if (reset_in = '1') then 
@@ -80,7 +81,8 @@ begin
                 next_instruction_address_s <= (others => '0');
                 is_return_s <= '0';
                 immediate_fetched_s <= FETCHED;
-            elsif (rising_edge(clk_c)) then
+            end if;
+            if (rising_edge(clk_c)) then
                 if(input_word_type_s /= WORD_TYPE_INSTRUCTION) then
                     immediate_fetched_s <= not immediate_fetched_s;
                 end if;
@@ -89,7 +91,6 @@ begin
                         enable_memory_s <= enable_memory_in;
                         memory_read_write_s <= memory_read_write_in;
                         enable_writeback_s <= enable_writeback_in;
-                        input_word_type_s <= input_word_type_in;
                         is_return_s <= is_return_in;
                         decode_has_s <= decode_has_in;
                         r_src_address_s <= r_src_address_in;
@@ -99,8 +100,9 @@ begin
                         next_instruction_address_s <= next_instruction_address_in;
                         opcode_s <= opcode_in;
                     else
-                    r_dst_data_s <= immediate_data_in;
+                        r_dst_data_s <= immediate_data_in;
                     end if;
+                    input_word_type_s <= input_word_type_in;
                 end if;
             end if;
         end process ; -- buffer_logic

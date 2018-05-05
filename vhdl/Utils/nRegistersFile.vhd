@@ -11,8 +11,8 @@ entity nRegistersFile is
     port (
         clk_c, enable1_in, enable2_in, reset_in : in std_logic;
 
-        r_src_write_address_in, r_dst_write_address_in : in std_logic_vector(num_selection_bits downto 0);
-        r_src_read_address_in, r_dst_read_address_in : in std_logic_vector(num_selection_bits downto 0);
+        r_src_write_address_in, r_dst_write_address_in : in std_logic_vector(num_selection_bits-1 downto 0);
+        r_src_read_address_in, r_dst_read_address_in : in std_logic_vector(num_selection_bits-1 downto 0);
 
         r_src_data_in, r_dst_data_in : in std_logic_vector(register_width-1 downto 0);
 

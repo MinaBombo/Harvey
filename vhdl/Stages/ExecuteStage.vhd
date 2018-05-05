@@ -19,9 +19,11 @@ entity ExecuteStage is
         execute_r_src_selection_in, execute_r_dst_selection_in: in std_logic_vector(1 downto 0);
         memory_is_return_interrupt_in : in std_logic; -- from memory
         flags_in : in std_logic_vector(3 downto 0); --From memory
+        select_r_src_from_r_src, select_r_dst_from_r_dst : in std_logic;
 
         memory_address_out, memory_input_out : out std_logic_vector(15 downto 0); -- for memory stage
         memory_needs_src_out : out std_logic;
+        memory_has_out: out std_logic_vector(1 downto 0);
         memory_is_return_interrupt_out : out std_logic;
         r_src_data_out, r_dst_data_out : out std_logic_vector(15 downto 0); -- for write back stage
         execute_needs_out, execute_has_out : out std_logic_vector(1 downto 0);  -- for FU
@@ -96,14 +98,22 @@ begin
         data_out => flag_register_output_s
     );
 
-    r_src_data_s <= r_src_data_from_decode_in when execute_r_src_selection_in = EXECUTE_SELECT_NORMAL 
-    else r_src_data_from_execute_in when execute_r_src_selection_in = EXECUTE_SELECT_SELF
-    else r_src_data_from_memory_in when execute_r_src_selection_in = EXECUTE_SELECT_MEMORY
+    r_src_data_s <= 
+    r_src_data_from_decode_in when execute_r_src_selection_in = EXECUTE_SELECT_NORMAL and select_r_src_from_r_src = '1'
+    else r_dst_data_from_decode_in when  execute_r_src_selection_in = EXECUTE_SELECT_NORMAL and select_r_src_from_r_src = '0'
+    else r_src_data_from_execute_in when execute_r_src_selection_in = EXECUTE_SELECT_SELF and select_r_src_from_r_src = '1'
+    else r_dst_data_from_execute_in when execute_r_src_selection_in = EXECUTE_SELECT_SELF and select_r_src_from_r_src = '0'
+    else r_src_data_from_memory_in when execute_r_src_selection_in = EXECUTE_SELECT_MEMORY and select_r_src_from_r_src = '1'
+    else r_dst_data_from_memory_in when execute_r_src_selection_in = EXECUTE_SELECT_MEMORY and select_r_src_from_r_src = '0'
     else (others => 'Z');
 
-    r_dst_data_s <= r_dst_data_from_decode_in when execute_r_dst_selection_in = EXECUTE_SELECT_NORMAL 
-    else r_dst_data_from_execute_in when execute_r_dst_selection_in = EXECUTE_SELECT_SELF
-    else r_dst_data_from_memory_in when execute_r_dst_selection_in = EXECUTE_SELECT_MEMORY
+    r_dst_data_s <= 
+    r_dst_data_from_decode_in when execute_r_dst_selection_in = EXECUTE_SELECT_NORMAL and select_r_dst_from_r_dst = '1'
+    else r_src_data_from_decode_in when  execute_r_src_selection_in = EXECUTE_SELECT_NORMAL and select_r_dst_from_r_dst = '0'
+    else r_dst_data_from_execute_in when execute_r_dst_selection_in = EXECUTE_SELECT_SELF and select_r_dst_from_r_dst = '1'
+    else r_src_data_from_execute_in when execute_r_dst_selection_in = EXECUTE_SELECT_SELF and select_r_dst_from_r_dst = '0'
+    else r_dst_data_from_memory_in when execute_r_dst_selection_in = EXECUTE_SELECT_MEMORY and select_r_dst_from_r_dst = '1'
+    else r_src_data_from_memory_in when execute_r_dst_selection_in = EXECUTE_SELECT_MEMORY and select_r_dst_from_r_dst = '0'
     else (others => 'Z');
 
     Inner_ALU : ALU port map (
@@ -161,6 +171,7 @@ begin
     else (others => 'Z'); 
 
     memory_needs_src_out <= '1' when  opcode_in = OP_STD or opcode_in = OP_PUSH  else '0';
+    memory_has_out <= HAS_ALL when opcode_in = OP_MUL else HAS_DST;
 
     memory_input_out <= 
     next_instruction_address_in when opcode_in = OP_CALL

@@ -96,7 +96,7 @@ package Commons is
     -- "11" (forbidden): won't take dst for decode from any other place 
 
     constant EXECUTE_SELECT_NORMAL  : std_logic_vector(1 downto 0) := "00";
-    constant EXECUTE_SELECT_SELF    : std_logic_vector(1 downto 0) := "00";
+    constant EXECUTE_SELECT_SELF    : std_logic_vector(1 downto 0) := "01";
     constant EXECUTE_SELECT_MEMORY  : std_logic_vector(1 downto 0) := "10";
     -- "11" (forbidden): won't take register for execute from any other place 
 
