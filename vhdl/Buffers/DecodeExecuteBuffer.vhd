@@ -59,17 +59,19 @@ architecture decode_execute_buffer_arch of DecodeExecuteBuffer is
     signal r_src_data_s, r_dst_data_s : std_logic_vector(15 downto 0);
     signal opcode_s : std_logic_vector(4 downto 0);
     signal next_instruction_address_s : std_logic_vector (15 downto 0);
+    signal not_clk_c : std_logic;
 
 begin
-        Interrupt_Logic : process( clk_c )
+        not_clk_c <= not clk_c;
+        Interrupt_Logic : process( not_clk_c )
         begin
-            if (rising_edge(clk_c)) then
+            if (rising_edge(not_clk_c)) then
                 is_interrupt_s <= cu_is_interrupt_in and last_buffer_is_interrupt_in;
             end if;
         end process ; -- Interrupt_Logic
 
 
-        Buffer_Logic : process( clk_c, reset_in )
+        Buffer_Logic : process( not_clk_c )
         begin
             if (reset_in = '1') then 
                 enable_memory_s <= '0';
@@ -82,7 +84,7 @@ begin
                 is_return_s <= '0';
                 immediate_fetched_s <= FETCHED;
             end if;
-            if (rising_edge(clk_c)) then
+            if (rising_edge(not_clk_c)) then
                 if(input_word_type_s /= WORD_TYPE_INSTRUCTION) then
                     immediate_fetched_s <= not immediate_fetched_s;
                 end if;

@@ -28,7 +28,7 @@ begin
         end if;
     end process ; -- Interrupt_Logic
 
-    Buffer_Logic : process( clk_c, reset_in )
+    Buffer_Logic : process( clk_c )
     begin
         if (reset_in = '1') then 
             input_word_type_s <= (others => '0');

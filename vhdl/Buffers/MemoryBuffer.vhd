@@ -36,7 +36,7 @@ architecture memory_buffer_arch of MemoryBuffer is
 
 begin
     
-    Buffer_Logic : process( clk_c,reset_in )
+    Buffer_Logic : process( clk_c )
     begin
         if(reset_in = '1') then
         r_src_data_s <= (others => '0');

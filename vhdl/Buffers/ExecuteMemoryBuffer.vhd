@@ -67,7 +67,7 @@ begin
         end if;
     end process ; -- Interrupt_Logic
 
-    Buffer_Logic : process( clk_c, reset_in )
+    Buffer_Logic : process( clk_c )
     begin
         if (reset_in = '1') then 
             memory_address_s             <=  (others => '0');
