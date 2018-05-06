@@ -113,7 +113,7 @@ begin
     r_dst_data_out <= r_dst_data_s;
     r_src_address_out <= r_src_address_s;
     r_dst_address_out <= r_dst_address_s;
-    execute_has_out <= execute_has_in;
+    execute_has_out <= execute_has_s;
     is_interrupt_out <= is_interrupt_s;
     enable_memory_out <= enable_memory_s;
     memory_read_write_out <= memory_read_write_s;

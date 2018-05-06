@@ -1,0 +1,9 @@
+2
+15
+
+; data segment
+
+; code sgement
+LDI R0,2
+LDI R1,3
+MUL R0,R1

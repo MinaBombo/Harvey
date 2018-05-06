@@ -70,7 +70,6 @@ begin
             end if;
         end process ; -- Interrupt_Logic
 
-
         Buffer_Logic : process( not_clk_c )
         begin
             if (reset_in = '1') then 
@@ -83,9 +82,8 @@ begin
                 next_instruction_address_s <= (others => '0');
                 is_return_s <= '0';
                 immediate_fetched_s <= FETCHED;
-            end if;
-            if (rising_edge(not_clk_c)) then
-                if(input_word_type_s /= WORD_TYPE_INSTRUCTION) then
+            elsif (rising_edge(not_clk_c)) then
+                if(input_word_type_s /= WORD_TYPE_INSTRUCTION or immediate_fetched_s = NOT_FETCHED) then
                     immediate_fetched_s <= not immediate_fetched_s;
                 end if;
                 if (enable_in = '1')then
@@ -93,16 +91,16 @@ begin
                         enable_memory_s <= enable_memory_in;
                         memory_read_write_s <= memory_read_write_in;
                         enable_writeback_s <= enable_writeback_in;
-                        is_return_s <= is_return_in;
-                        decode_has_s <= decode_has_in;
                         r_src_address_s <= r_src_address_in;
                         r_dst_address_s <= r_dst_address_in;
-                        r_src_data_s <= r_src_data_in;
-                        r_dst_data_s <= r_dst_data_in;
+                        is_return_s <= is_return_in;
+                        decode_has_s <= decode_has_in;
                         next_instruction_address_s <= next_instruction_address_in;
-                        opcode_s <= opcode_in;
-                    else
-                        r_dst_data_s <= immediate_data_in;
+                        opcode_s <= opcode_in;  
+                        r_src_data_s <= r_src_data_in;
+                        r_dst_data_s <= r_dst_data_in; 
+                        else 
+                            r_dst_data_s <= immediate_data_in;         
                     end if;
                     input_word_type_s <= input_word_type_in;
                 end if;
