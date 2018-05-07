@@ -50,6 +50,7 @@ architecture decode_stage_arch of DecodeStage is
     signal r_src_read_address_s, r_dst_read_address_s : std_logic_vector(2 downto 0);	
     signal r_dst_data_s: std_logic_vector(15 downto 0);
     signal enable_r_src_s,enable_r_dst_s : std_logic;
+    signal not_clk_c : std_logic;
 
 begin
     opcode_out <= instruction_in(OPCODE_HIGHER_LIMIT downto R_SRC_HIGHER_LIMIT+1) 
@@ -65,9 +66,10 @@ begin
     r_dst_address_out <= r_dst_read_address_s;
     enable_r_src_s <= '1' when enable_writeback_in = ENABLE_WRITEBACK_all else '0';
     enable_r_dst_s <= '1' when enable_writeback_in /= DISABLE_WRITEBACK else '0';
+    not_clk_c <= not clk_c;
 
     Inner_Register_File : nRegistersFile generic map (n => 6, num_selection_bits => 3, register_width => 16) port map (
-        clk_c => clk_c, enable1_in => enable_r_src_s, enable2_in => enable_r_dst_s, reset_in => reset_in,
+        clk_c => not_clk_c, enable1_in => enable_r_src_s, enable2_in => enable_r_dst_s, reset_in => reset_in,
         r_src_write_address_in => r_src_address_in, r_dst_write_address_in => r_dst_address_in,
         r_src_read_address_in => r_src_read_address_s, r_dst_read_address_in => r_dst_read_address_s,
         r_src_data_in => r_src_data_in, r_dst_data_in => r_dst_data_in,

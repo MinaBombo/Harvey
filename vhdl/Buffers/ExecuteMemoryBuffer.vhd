@@ -67,7 +67,7 @@ begin
         end if;
     end process ; -- Interrupt_Logic
 
-    Buffer_Logic : process( clk_c )
+    Buffer_Logic : process( clk_c,reset_in )
     begin
         if (reset_in = '1') then 
             memory_address_s             <=  (others => '0');
@@ -84,8 +84,7 @@ begin
             enable_writeback_s           <=   (others => '0');
             memory_has_s                 <=   (others => '0'); 
             is_out_instruction_s         <=   '0';
-        end if;
-        if (rising_edge(clk_c)) then
+        elsif (rising_edge(clk_c)) then
             if (enable_in = '1') then
                 memory_address_s <= memory_address_in;
                 memory_input_s <= memory_input_in;

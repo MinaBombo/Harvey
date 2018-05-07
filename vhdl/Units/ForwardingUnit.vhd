@@ -77,8 +77,8 @@ architecture forwarding_unit_arch of ForwardingUnit is
         );
     end component;
 
-    signal current_registers_change_status_s : std_logic_vector(5 downto 0);
-    signal last_registers_change_status_s : std_logic_vector(5 downto 0);
+    signal current_registers_change_status_s : std_logic_vector(7 downto 0);
+    signal last_registers_change_status_s : std_logic_vector(7 downto 0);
     signal registers_change_status_register_enable_s : std_logic; 
 
     signal current_execution_src_status_s, current_execution_dst_status_s : std_logic;
@@ -99,7 +99,11 @@ architecture forwarding_unit_arch of ForwardingUnit is
     signal decode_r_dst_selection_s : std_logic_vector(1 downto 0);
     signal execute_r_src_selection_s, execute_r_dst_selection_s : std_logic_vector(1 downto 0);
     signal memory_r_src_selection_s : std_logic;
-    signal current_decode_r_src_status_s, current_decode_r_dst_status_s, current_write_back_r_src_status_s,current_write_back_r_dst_status_s : std_logic_vector(5 downto 0) := (Others => '0');  
+    signal current_decode_r_src_status_s, current_decode_r_dst_status_s, current_write_back_r_src_status_s,current_write_back_r_dst_status_s : std_logic_vector(7 downto 0) := (Others => '0');  
+    signal current_decode_r_src_status_decoder_enable_s : std_logic;
+    signal current_decode_r_dst_status_decoder_enable_s : std_logic;
+    signal current_write_back_r_src_status_decoder_enable_s : std_logic;
+    signal current_write_back_r_dst_status_decoder_enable_s : std_logic;
 
 begin
     
@@ -110,19 +114,41 @@ begin
 
     registers_change_status_register_enable_s <= '1' when  (will_change_in /= WILL_CHANGE_NOTHING or write_back_select_in /= WILL_CHANGE_NOTHING);
 
-    current_decode_r_src_status_s(decode_r_src_index_s) <= '0' when reset_in = '1' else  '1' when will_change_in = WILL_CHANGE_BOTH else '0' ; 
-    current_decode_r_dst_status_s(decode_r_dst_index_s) <=  '0' when reset_in = '1' else  '1' when will_change_in /= WILL_CHANGE_NOTHING else '0';
+    current_decode_r_src_status_decoder_enable_s <= '0' when reset_in = '1' else  '1' when will_change_in = WILL_CHANGE_BOTH else '0' ; 
+    current_decode_r_dst_status_decoder_enable_s<=  '0' when reset_in = '1' else  '1' when will_change_in /= WILL_CHANGE_NOTHING else '0';
 
-    current_write_back_r_src_status_s(write_back_has_written_src_index_s) <= '0' when reset_in = '1' else '1' 
-    when (decode_r_src_index_s /= write_back_has_written_src_index_s and  write_back_select_in = WILL_CHANGE_BOTH) 
-    or (decode_r_src_index_s = write_back_has_written_src_index_s and  (will_change_in = WILL_CHANGE_NOTHING or will_change_in = WILL_CHANGE_DST)) else '0';
+    Decode_Src_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
+        enable_in => current_decode_r_src_status_decoder_enable_s, selection_in => decode_r_src_index_in,
+        data_out => current_decode_r_src_status_s
+    );
 
-    current_write_back_r_dst_status_s(write_back_has_written_dst_index_s) <= '0' when reset_in = '1' else  '1'
-    when (decode_r_dst_index_s /= write_back_has_written_dst_index_s and write_back_select_in /= WILL_CHANGE_NOTHING) 
-    or (decode_r_dst_index_s = write_back_has_written_dst_index_s  and will_change_in = WILL_CHANGE_NOTHING) else '0' when reset_in = '1'else '0';
+    Decode_Dst_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
+        enable_in => current_decode_r_dst_status_decoder_enable_s, selection_in => decode_r_dst_index_in,
+        data_out => current_decode_r_dst_status_s
+    );
+
+    current_write_back_r_src_status_decoder_enable_s <= 
+             '0' when reset_in = '1' 
+        else '1' when (decode_r_src_index_s /= write_back_has_written_src_index_s and  write_back_select_in = WILL_CHANGE_BOTH) 
+                   or (decode_r_src_index_s = write_back_has_written_src_index_s and  ((will_change_in = WILL_CHANGE_NOTHING or will_change_in = WILL_CHANGE_DST) and  (write_back_select_in = WILL_CHANGE_BOTH))) 
+        else '0';
+
+        current_write_back_r_dst_status_decoder_enable_s <=
+             '0' when reset_in = '1'
+        else '1' when (decode_r_dst_index_s /= write_back_has_written_dst_index_s and write_back_select_in /= WILL_CHANGE_NOTHING) 
+                   or (decode_r_dst_index_s = write_back_has_written_dst_index_s  and will_change_in = WILL_CHANGE_NOTHING and write_back_select_in /= WILL_CHANGE_NOTHING)
+        else '0';
+    Write_Back_Src_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
+        enable_in => current_decode_r_dst_status_decoder_enable_s, selection_in => write_back_has_written_src_index_in,
+        data_out => current_write_back_r_src_status_s
+    );
+    Write_Back_Dst_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
+        enable_in => current_decode_r_dst_status_decoder_enable_s, selection_in => write_back_has_written_dst_index_in,
+        data_out => current_write_back_r_dst_status_s
+    );
 
     current_registers_change_status_s <= (current_decode_r_src_status_s or current_decode_r_dst_status_s) and not (current_write_back_r_src_status_s or current_write_back_r_dst_status_s);
-    Registers_Change_Status_Register : nBitRegister generic map (n => 6) port map (
+    Registers_Change_Status_Register : nBitRegister generic map (n => 8) port map (
         clk_c => clk_c, enable_in => registers_change_status_register_enable_s, reset_in => reset_in, 
         data_in => current_registers_change_status_s, data_out => last_registers_change_status_s);
 

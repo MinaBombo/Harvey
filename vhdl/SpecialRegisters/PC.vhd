@@ -40,9 +40,11 @@ begin
     load_enable_s <= reset_in or execute_is_jump_taken_in or decode_is_call_in or memory_is_return_in or memory_is_interrupt_in 
     or (decode_is_interrupt_in and not decode_is_interrupt_latched_s);
 
-    Decode_Is_Interrupt_latch : process(clk_c,decode_is_interrupt_in)
+    Decode_Is_Interrupt_latch : process(clk_c,decode_is_interrupt_in,reset_in)
     begin
-        if(rising_edge(clk_c)) then
+        if(reset_in = '1') then
+            decode_is_interrupt_latched_s <= '0';
+        elsif(rising_edge(clk_c)) then
             decode_is_interrupt_latched_s <= decode_is_interrupt_in;
         end if;
     end process ; -- Decode_Is_Interrupt_latch
@@ -51,7 +53,7 @@ begin
     else decode_call_address_in when decode_is_call_in ='1'
     else memory_return_address_in when memory_is_return_in ='1'
     else interupt_address_in when memory_is_interrupt_in = '1'
-    else std_logic_vector(unsigned(address_s) - 1) when decode_is_interrupt_in = '1' and decode_is_interrupt_latched_s<='0'
+    else std_logic_vector(unsigned(address_s) - 1) when decode_is_interrupt_in = '1' and decode_is_interrupt_latched_s ='0'
     else (others => '0');
 
     Inner_Counter : nBitsCounter generic map ( n => 16) port map (

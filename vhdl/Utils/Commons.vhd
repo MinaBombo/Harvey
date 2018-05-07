@@ -30,10 +30,10 @@ package Commons is
     constant NEED_BOTH      : std_logic_vector(1 downto 0) := "11";
 
 
-    constant HAS_ALL    : std_logic_vector (1 downto 0 ):= "00";
-    constant HAS_SRC    : std_logic_vector (1 downto 0 ):= "01";
-    constant HAS_DST    : std_logic_vector (1 downto 0 ):= "10";
-    constant HAS_NONE   : std_logic_vector (1 downto 0 ):= "11";
+    constant HAS_NONE    : std_logic_vector (1 downto 0 ):= "00";
+    constant HAS_SRC     : std_logic_vector (1 downto 0 ):= "01";
+    constant HAS_DST     : std_logic_vector (1 downto 0 ):= "10";
+    constant HAS_ALL     : std_logic_vector (1 downto 0 ):= "11";
 
     constant ENABLE_MEMORY  : std_logic := '1';
     constant DISABLE_MEMORY : std_logic := '0';

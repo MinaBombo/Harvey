@@ -298,9 +298,11 @@ architecture system_arch of System is
     end component;
     component StallingUnit is
         port (
+            clk_c, global_reset_in : in std_logic;
+    
             cu_stall_stage_index_in, fu_stall_stage_index_in : in std_logic_vector(1 downto 0);
-            global_reset_in : in std_logic;
             immediate_fetched_in : in std_logic;
+            
             enable_pc_inc_out : out std_logic;
             enable_fetch_decode_buffer_out, reset_fetch_decode_buffer_out : out std_logic;
             enable_decode_execute_buffer_out, reset_decode_execute_buffer_out : out std_logic;
@@ -589,6 +591,7 @@ begin
         );
 
         System_Stall_Unit : StallingUnit port map (
+            clk_c => clk_c,
             cu_stall_stage_index_in => cu_su_stall_index, fu_stall_stage_index_in => fu_su_stall_index,
             global_reset_in => reset_in,immediate_fetched_in => decode_execute_buffer_immediate_fetched,
             enable_pc_inc_out => su_pc_enable_pc_increment,

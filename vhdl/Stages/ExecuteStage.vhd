@@ -143,9 +143,9 @@ begin
     NEED_BOTH when opcode_in = ALU_OP_ADD or opcode_in = ALU_OP_SUB or opcode_in = ALU_OP_AND
     or opcode_in = ALU_OP_OR or opcode_in = OP_MUL 
     else NEED_SRC when opcode_in = ALU_OP_SHL or opcode_in = ALU_OP_SHR 
-    or opcode_in = OP_MOV
-    else NEED_DST when opcode_in = ALU_OP_RLC or opcode_in = ALU_OP_RRC or opcode_in = ALU_OP_NOT
-    or opcode_in = ALU_OP_INC or opcode_in = ALU_OP_DEC or opcode_in = OP_OUT or opcode_in = OP_JZ
+    or opcode_in = OP_MOV or opcode_in = ALU_OP_RLC or opcode_in = ALU_OP_RRC or opcode_in = ALU_OP_NOT
+    or opcode_in = ALU_OP_INC or opcode_in = ALU_OP_DEC
+    else NEED_DST when opcode_in = OP_OUT or opcode_in = OP_JZ
     or opcode_in = OP_JN or opcode_in = OP_JC or opcode_in = OP_JMP or opcode_in = OP_CALL
     else NEEDS_NOTHING when opcode_in = ALU_OP_NOP or opcode_in = ALU_OP_SETC or opcode_in = ALU_OP_CLRC
     or opcode_in = OP_POP or opcode_in = OP_PUSH or opcode_in = OP_IN or opcode_in = OP_RET or opcode_in = OP_RTI 
@@ -180,7 +180,7 @@ begin
     else (others => 'Z');  
     
 
-    memory_is_return_interrupt_out <= '1' when opcode_in = OP_RTI;
+    memory_is_return_interrupt_out <= '1' when opcode_in = OP_RTI else '0';
 
     is_jump_taken_out <= '0' when enable_in = '0'
     else '1' when opcode_in = OP_JMP 
