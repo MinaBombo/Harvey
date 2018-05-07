@@ -164,15 +164,14 @@ class Assembler {
         if(line.length() == 0)
             return null;
 
-        String parts[] = line.split(" ");
-        String instruction = parts[0];
-        line = line.substring(instruction.length());
-        if(line.length() > 0)
-            line = line.substring(1);
-        String operands[] = line.split(",");
-        operands[operands.length-1] = operands[operands.length-1].split(" ")[0];
+        String lineWithoutComment = line.split(";")[0];
+        String codeParts[] = lineWithoutComment.split(" ");
+        String instruction = codeParts[0];
+        String operands[] = null;
+        if(codeParts.length>1)
+            operands = codeParts[1].split(",");
 
-        return parseInstruction(parts[0], operands);
+        return parseInstruction(instruction, operands);
     }
 
     private String[] parseInstruction(String instr, String[] operands){
@@ -187,7 +186,7 @@ class Assembler {
             };
 
             // Single operands in dst with NO imm or ea
-        else if(instr.matches("\\b(?i)(r[l|r]c|pop|out|in|not|[in|de]c|j[z|n|c]|jmp|call)\\b"))
+        else if(instr.matches("\\b(?i)(r[l|r]c|pop|out|in|not|(in|de)c|j[z|n|c]|jmp|call)\\b"))
             return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
                     + NO_REG
                     + parseOperand(operands[0])
