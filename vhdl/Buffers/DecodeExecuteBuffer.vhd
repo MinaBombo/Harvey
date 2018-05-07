@@ -83,7 +83,7 @@ begin
                 is_return_s <= '0';
                 immediate_fetched_s <= FETCHED;
             elsif (rising_edge(not_clk_c)) then
-                if(input_word_type_s /= WORD_TYPE_INSTRUCTION or immediate_fetched_s = NOT_FETCHED) then
+                if(input_word_type_in /= WORD_TYPE_INSTRUCTION or immediate_fetched_s = NOT_FETCHED) then
                     immediate_fetched_s <= not immediate_fetched_s;
                 end if;
                 if (enable_in = '1')then

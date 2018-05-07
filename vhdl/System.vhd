@@ -33,7 +33,7 @@ architecture system_arch of System is
             cache_size : integer := 512
         );
         port (
-            clk_c : in std_logic;
+            clk_c, reset_in : in std_logic;
             current_instruction_address_in : in std_logic_vector(word_width-1 downto 0);
             
             data_word_out : out std_logic_vector(word_width-1 downto 0)
@@ -381,7 +381,7 @@ begin
         );
 
     System_Fetch_Stage : FetchStage generic map (word_width => 16, cache_size => 512)
-        port map ( clk_c => clk_c,current_instruction_address_in => current_pc_address,data_word_out => fetch_fetch_decode_buffer_data);
+        port map ( clk_c => clk_c,reset_in => reset_in,current_instruction_address_in => current_pc_address,data_word_out => fetch_fetch_decode_buffer_data);
     
     System_Fetch_Decode_Buffer : FetchDecodeBuffer generic map (word_width => 16) port map (
             clk_c => clk_c, enable_in => su_fetch_decode_buffer_enable, reset_in => su_fetch_decode_buffer_reset,
