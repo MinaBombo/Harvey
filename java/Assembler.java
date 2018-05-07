@@ -1,15 +1,16 @@
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
-public class Assembler {
+class Assembler {
 
     private static final String  FORMAT                = "mti";
     private static final char    ADDR_RADIX            = 'd';
@@ -21,13 +22,13 @@ public class Assembler {
     private static final String  DATA_FILE_IDENTIFIER = "_data";
 
     private static final List<String> Operations = Arrays.asList(
-        "NOP",  "ADD",  "SUB",  "AND", "OR",  "RLC", "RRC", "SHL",
-        "SHR",  "SETC", "CLRC", "NOT", "INC", "DEC", 
-        
-        "MOV", "MUL", "PUSH", "POP", "OUT", "IN",  "JZ",  "JN",
-        "JC",  "JMP", "CALL", "RET", "RTI", "LDM", "LDD", "STD"
+            "NOP",  "ADD",  "SUB",  "AND", "OR",  "RLC", "RRC", "SHL",
+            "SHR",  "SETC", "CLRC", "NOT", "INC", "DEC",
+
+            "MOV", "MUL", "PUSH", "POP", "OUT", "IN",  "JZ",  "JN",
+            "JC",  "JMP", "CALL", "RET", "RTI", "LDM", "LDD", "STD"
     );
-    ;
+
     private static final String MEMORY_FILE_HEADER =
             "// memory data file (do not edit the following line - required for mem load use)\n"
                     + "// format=" + FORMAT + ' '
@@ -45,31 +46,26 @@ public class Assembler {
     private static final String NO_REG = new String(new char[3]).replace("\0", "0");
     private static final String NOT_USED_BITS = new String(new char[5]).replace("\0", "0");
 
-    BufferedReader mReader = null;
-    BufferedWriter mInstructionsWriter = null, mDataWriter = null;
+    private BufferedReader mReader = null;
+    private BufferedWriter mInstructionsWriter = null, mDataWriter = null;
 
     private class CompilationErrorException extends RuntimeException{
-        public CompilationErrorException(String message) {
+        CompilationErrorException(String message) {
             super(message);
         }
     }
 
-    public void CompileFile(String inpFilename, String memoryFolder){
-        if(memoryFolder.charAt(memoryFolder.length()-1) != '/')
-            memoryFolder += '/';
-        String intructionCacheFile = memoryFolder
-                + inpFilename.substring(inpFilename.lastIndexOf('/'), inpFilename.lastIndexOf('.'))
-                + INSTRUCTION_FILE_IDENTIFIER
-                + MEMORY_FILE_EXTENSION;
-        String dataCacheFile = memoryFolder
-                + inpFilename.substring(inpFilename.lastIndexOf('/'), inpFilename.lastIndexOf('.'))
-                + DATA_FILE_IDENTIFIER
-                + MEMORY_FILE_EXTENSION;
-
+    void CompileFile(String inpFilename, String memoryFolder){
         try{
             File inpFile  = new File(inpFilename);
-            File instructionsFile = new File(intructionCacheFile);
-            File dataFile = new File(dataCacheFile);
+            File instructionsFile = Paths.get(
+                    inpFilename.substring(0, inpFilename.lastIndexOf('.'))
+                            + INSTRUCTION_FILE_IDENTIFIER
+                            + MEMORY_FILE_EXTENSION).toFile();
+            File dataFile = Paths.get(
+                    inpFilename.substring(0, inpFilename.lastIndexOf('.'))
+                            + DATA_FILE_IDENTIFIER
+                            + MEMORY_FILE_EXTENSION).toFile();
 
             mReader = new BufferedReader(new FileReader(inpFile));
             mInstructionsWriter = new BufferedWriter(new FileWriter(instructionsFile));
@@ -85,11 +81,7 @@ public class Assembler {
 
             parseFileToCaches();
             writeCachesToFiles();
-        }
-        catch (FileNotFoundException e){
-            e.printStackTrace();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -110,13 +102,13 @@ public class Assembler {
         String line;
 
         line = mReader.readLine();
-        mDataCache[PC_CACHE_INDEX]  = String.format("%16s", 
+        mDataCache[PC_CACHE_INDEX]  = String.format("%16s",
                 Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
                 .replace(' ', '0');
         System.out.println("PC starting address: " + mDataCache[PC_CACHE_INDEX]);
 
         line = mReader.readLine();
-        mDataCache[INT_CACHE_INDEX] = String.format("%16s", 
+        mDataCache[INT_CACHE_INDEX] = String.format("%16s",
                 Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
                 .replace(' ', '0');
         System.out.println("INT address: " + mDataCache[INT_CACHE_INDEX]);
@@ -129,11 +121,11 @@ public class Assembler {
                 if(!Character.isDigit(line.charAt(0))){
                     break;
                 }
-                mDataCache[mDataCacheIndex++] = String.format("%16s", 
+                mDataCache[mDataCacheIndex++] = String.format("%16s",
                         Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
                         .replace(' ', '0');
             }
-        }   
+        }
 
         // parse code segment
         while ((line = mReader.readLine()) != null) {
@@ -141,15 +133,15 @@ public class Assembler {
                 if(line.charAt(0) == '.'){
                     break;
                 }
-                for(String parsedLine : parseLine(line)){
+                for(String parsedLine : Objects.requireNonNull(parseLine(line))){
                     mInstructionsCache[mInstructionsCacheIndex++] = parsedLine;
                 }
             }
-        }   
+        }
 
         // parse .addresses
         do{
-            int index = Integer.parseInt(line.substring(1).replaceAll("\\D.*", ""));
+            int index = Integer.parseInt(Objects.requireNonNull(line).substring(1).replaceAll("\\D.*", ""));
             while((line = mReader.readLine()) != null){
                 if(line.length() != 0){
                     if(line.charAt(0) == '.'){
@@ -160,7 +152,7 @@ public class Assembler {
                                 + "instructions cache index : "
                                 + String.valueOf(index));
                     }
-                    for(String parsedLine : parseLine(line)){
+                    for(String parsedLine : Objects.requireNonNull(parseLine(line))){
                         mInstructionsCache[index++] = parsedLine;
                     }
                 }
@@ -194,7 +186,7 @@ public class Assembler {
                     + NOT_USED_BITS
             };
 
-        // Single operands in dst with NO imm or ea
+            // Single operands in dst with NO imm or ea
         else if(instr.matches("\\b(?i)(r[l|r]c|pop|out|in|not|[in|de]c|j[z|n|c]|jmp|call)\\b"))
             return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
                     + NO_REG
@@ -202,7 +194,7 @@ public class Assembler {
                     + NOT_USED_BITS
             };
 
-        // Single operands in dst with imm or ea
+            // Single operands in dst with imm or ea
         else if(instr.matches("\\b(?i)(ld[d|m])\\b"))
             return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
                     + NO_REG
@@ -210,29 +202,29 @@ public class Assembler {
                     + NOT_USED_BITS,
 
                     String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
-                    .replace(' ', '0')
+                            .replace(' ', '0')
             };
 
-        // Single operands in src with NO imm or ea
+            // Single operands in src with NO imm or ea
         else if(instr.matches("\\b(?i)(push)\\b"))
             return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                + parseOperand(operands[0])
-                + NO_REG
-                + NOT_USED_BITS
+                    + parseOperand(operands[0])
+                    + NO_REG
+                    + NOT_USED_BITS
             };
 
-        // Single operands in src with imm or ea
+            // Single operands in src with imm or ea
         else if(instr.matches("\\b(?i)(std)\\b"))
             return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                + parseOperand(operands[0])
-                + NO_REG
-                + NOT_USED_BITS,
+                    + parseOperand(operands[0])
+                    + NO_REG
+                    + NOT_USED_BITS,
 
-                String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
-                .replace(' ', '0')
+                    String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
+                            .replace(' ', '0')
             };
 
-        // Double operands with NO imm or ea
+            // Double operands with NO imm or ea
         else if(instr.matches("\\b(?i)(mov|a[n|d]d|mul|sub|or)\\b"))
             return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
                     + parseOperand(operands[0])
@@ -240,16 +232,16 @@ public class Assembler {
                     + NOT_USED_BITS
             };
 
-        // Double operands with imm or ea
+            // Double operands with imm or ea
         else if(instr.matches("\\b(?i)(sh[r|l])\\b"))
-            return new String[] { 
+            return new String[] {
                     Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + parseOperand(operands[0])
-                    + parseOperand(operands[2])
-                    + NOT_USED_BITS,
+                            + parseOperand(operands[0])
+                            + parseOperand(operands[2])
+                            + NOT_USED_BITS,
 
                     String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
-                    .replace(' ', '0')
+                            .replace(' ', '0')
             };
 
         else
