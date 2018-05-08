@@ -128,7 +128,7 @@ begin
     else r_src_data_s when opcode_in = OP_MOV 
     else in_port_data_in when opcode_in = OP_IN -- source is in port
     else mult_result_s(15 downto 0) when opcode_in = OP_MUL
-    else r_dst_data_s when opcode_in = OP_LDM -- immediate comes in dst
+    else r_dst_data_s when opcode_in = OP_LDM or opcode_in = OP_OUT -- immediate comes in dst
     else (others => 'Z');
 
     r_src_data_out <= mult_result_s(31 downto 16) when opcode_in = OP_MUL else (others => 'Z'); 
@@ -146,10 +146,10 @@ begin
     or opcode_in = OP_MOV or opcode_in = ALU_OP_RLC or opcode_in = ALU_OP_RRC or opcode_in = ALU_OP_NOT
     or opcode_in = ALU_OP_INC or opcode_in = ALU_OP_DEC
     else NEED_DST when opcode_in = OP_OUT or opcode_in = OP_JZ
-    or opcode_in = OP_JN or opcode_in = OP_JC or opcode_in = OP_JMP or opcode_in = OP_CALL
+    or opcode_in = OP_JN or opcode_in = OP_JC or opcode_in = OP_JMP 
     else NEEDS_NOTHING when opcode_in = ALU_OP_NOP or opcode_in = ALU_OP_SETC or opcode_in = ALU_OP_CLRC
     or opcode_in = OP_POP or opcode_in = OP_PUSH or opcode_in = OP_IN or opcode_in = OP_RET or opcode_in = OP_RTI 
-    or opcode_in = OP_LDM or opcode_in = OP_LDD
+    or opcode_in = OP_LDM or opcode_in = OP_LDD or opcode_in = OP_CALL
     else (others => 'Z'); 
 
     execute_has_out <= 
@@ -171,7 +171,17 @@ begin
     else (others => 'Z'); 
 
     memory_needs_src_out <= '1' when  opcode_in = OP_STD or opcode_in = OP_PUSH  else '0';
-    memory_has_out <= HAS_ALL when opcode_in = OP_MUL else HAS_DST;
+    memory_has_out <= 
+    HAS_NONE when opcode_in = ALU_OP_NOP or opcode_in = ALU_OP_SETC or opcode_in = ALU_OP_CLRC
+        or opcode_in = OP_PUSH or opcode_in = OP_OUT or opcode_in = OP_JZ
+        or opcode_in = OP_JN or opcode_in = OP_JC or opcode_in = OP_JMP or opcode_in = OP_CALL
+        or opcode_in = OP_RET or opcode_in = OP_RTI or opcode_in = OP_STD
+    else HAS_DST when opcode_in = ALU_OP_ADD or opcode_in = ALU_OP_SUB or opcode_in = ALU_OP_AND 
+    or opcode_in = ALU_OP_OR or opcode_in = ALU_OP_RLC or opcode_in = ALU_OP_RRC or opcode_in = ALU_OP_SHL 
+    or opcode_in = ALU_OP_SHR or opcode_in = ALU_OP_NOT or opcode_in = ALU_OP_INC or opcode_in = ALU_OP_DEC
+    or opcode_in = OP_MOV or opcode_in = OP_IN or opcode_in =  OP_LDM or opcode_in =  OP_LDD or
+    opcode_in = OP_POP
+    else HAS_ALL when opcode_in = OP_MUL else (others => 'Z');
 
     memory_input_out <= 
     next_instruction_address_in when opcode_in = OP_CALL

@@ -104,6 +104,7 @@ architecture forwarding_unit_arch of ForwardingUnit is
     signal current_decode_r_dst_status_decoder_enable_s : std_logic;
     signal current_write_back_r_src_status_decoder_enable_s : std_logic;
     signal current_write_back_r_dst_status_decoder_enable_s : std_logic;
+    signal not_write_back_and_last_registers_state_s : std_logic_vector(7 downto 0);
 
 begin
     
@@ -115,39 +116,36 @@ begin
     registers_change_status_register_enable_s <= '1' when  (will_change_in /= WILL_CHANGE_NOTHING or write_back_select_in /= WILL_CHANGE_NOTHING);
 
     current_decode_r_src_status_decoder_enable_s <= '0' when reset_in = '1' else  '1' when will_change_in = WILL_CHANGE_BOTH else '0' ; 
-    current_decode_r_dst_status_decoder_enable_s<=  '0' when reset_in = '1' else  '1' when will_change_in /= WILL_CHANGE_NOTHING else '0';
-
     Decode_Src_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
         enable_in => current_decode_r_src_status_decoder_enable_s, selection_in => decode_r_src_index_in,
         data_out => current_decode_r_src_status_s
     );
 
+    current_decode_r_dst_status_decoder_enable_s<=  '0' when reset_in = '1' else  '1' when will_change_in /= WILL_CHANGE_NOTHING else '0';
     Decode_Dst_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
         enable_in => current_decode_r_dst_status_decoder_enable_s, selection_in => decode_r_dst_index_in,
         data_out => current_decode_r_dst_status_s
     );
 
-    current_write_back_r_src_status_decoder_enable_s <= 
-             '0' when reset_in = '1' 
-        else '1' when (decode_r_src_index_s /= write_back_has_written_src_index_s and  write_back_select_in = WILL_CHANGE_BOTH) 
-                   or (decode_r_src_index_s = write_back_has_written_src_index_s and  ((will_change_in = WILL_CHANGE_NOTHING or will_change_in = WILL_CHANGE_DST) and  (write_back_select_in = WILL_CHANGE_BOTH))) 
-        else '0';
-
-    current_write_back_r_dst_status_decoder_enable_s <=
-             '0' when reset_in = '1'
-        else '1' when (decode_r_dst_index_s /= write_back_has_written_dst_index_s and write_back_select_in /= WILL_CHANGE_NOTHING) 
-                   or (decode_r_dst_index_s = write_back_has_written_dst_index_s  and will_change_in = WILL_CHANGE_NOTHING and write_back_select_in /= WILL_CHANGE_NOTHING)
-        else '0';
+    current_write_back_r_src_status_decoder_enable_s <= '0' when reset_in = '1' else '1' when write_back_select_in = WILL_CHANGE_BOTH else '0';
     Write_Back_Src_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
         enable_in => current_write_back_r_src_status_decoder_enable_s, selection_in => write_back_has_written_src_index_in,
         data_out => current_write_back_r_src_status_s
     );
+
+    current_write_back_r_dst_status_decoder_enable_s <= '0' when reset_in = '1' else '1' when write_back_select_in /= WILL_CHANGE_NOTHING else '0';
     Write_Back_Dst_Status_Decoder : nBitsDecoder generic map (n => 3) port map (
         enable_in => current_write_back_r_dst_status_decoder_enable_s, selection_in => write_back_has_written_dst_index_in,
         data_out => current_write_back_r_dst_status_s
     );
 
-    current_registers_change_status_s <= (current_decode_r_src_status_s or current_decode_r_dst_status_s or last_registers_change_status_s) and not (current_write_back_r_src_status_s or current_write_back_r_dst_status_s);
+
+    not_write_back_and_last_registers_state_s <= not(current_write_back_r_src_status_s or current_write_back_r_dst_status_s) and last_registers_change_status_s;
+
+    current_registers_change_status_s <= 
+            (current_decode_r_src_status_s or current_decode_r_dst_status_s) or not_write_back_and_last_registers_state_s;  
+
+
     Registers_Change_Status_Register : nBitRegister generic map (n => 8) port map (
         clk_c => clk_c, enable_in => registers_change_status_register_enable_s, reset_in => reset_in, 
         data_in => current_registers_change_status_s, data_out => last_registers_change_status_s);
@@ -179,10 +177,12 @@ begin
 
     decode_needs_r_dst_index_s <= to_integer(unsigned(decode_needs_r_dst_index_in));
 
-    decode_r_dst_selection_s <= DECODE_DST_NORMAL when decode_needs_in = '0' or 
-    last_registers_change_status_s(decode_needs_r_dst_index_s) = '0' else DECODE_DST_EXECUTE when 
-    current_execution_has_status_s(decode_needs_r_dst_index_s) = '1' else DECODE_DST_MEMORY when
-    current_memory_has_status_s(decode_needs_r_dst_index_s) = '1' else NO_FORWARD_POSSIBLE;
+    decode_r_dst_selection_s <= DECODE_DST_NORMAL 
+        when decode_needs_in = '0' or last_registers_change_status_s(decode_needs_r_dst_index_s) = '0'
+        else DECODE_DST_EXECUTE when 
+            current_execution_has_status_s(decode_needs_r_dst_index_s) = '1' 
+        else DECODE_DST_MEMORY when
+            current_memory_has_status_s(decode_needs_r_dst_index_s) = '1' else NO_FORWARD_POSSIBLE;
 
     decode_availble_s <= '0' when decode_r_dst_selection_s = NO_FORWARD_POSSIBLE else '1';
 
@@ -193,8 +193,7 @@ begin
     EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING else
     EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_src_index_s) = '1' 
     else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_src_index_s) = '1' 
-    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEED_DST 
-    or last_registers_change_status_s(execute_needs_r_src_index_s) = '0' or decode_has_in = HAS_ALL 
+    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEED_DST or decode_has_in = HAS_ALL or decode_has_in = HAS_SRC
     else NO_FORWARD_POSSIBLE;
     
     execute_r_src_selection_from_r_src <= 
@@ -214,10 +213,7 @@ begin
     EXECUTE_SELECT_NORMAL when execute_needs_in = NEEDS_NOTHING else
     EXECUTE_SELECT_SELF when current_execution_has_status_s(execute_needs_r_dst_index_s) = '1' 
     else EXECUTE_SELECT_MEMORY when current_memory_has_status_s(execute_needs_r_dst_index_s) = '1'
-    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEED_SRC or 
-    last_registers_change_status_s(execute_needs_r_dst_index_s) = '0' or decode_has_in = HAS_DST 
-    or decode_has_in = HAS_ALL 
-    else NO_FORWARD_POSSIBLE;
+    else EXECUTE_SELECT_NORMAL when execute_needs_in = NEED_SRC or decode_has_in = HAS_DST or decode_has_in = HAS_ALL else NO_FORWARD_POSSIBLE;
 
     execute_r_dst_selection_from_r_dst <= 
     '1' 
@@ -240,10 +236,11 @@ begin
     
 
     decode_has_out <= 
-    HAS_NONE when last_registers_change_status_s(decode_r_src_index_s) = '1' and last_registers_change_status_s(decode_r_dst_index_s) = '1' 
-    else HAS_SRC when last_registers_change_status_s(decode_r_dst_index_s) = '1' 
-    else HAS_DST when last_registers_change_status_s(decode_r_src_index_s) = '1' 
-    else HAS_ALL;
+    HAS_ALL when not_write_back_and_last_registers_state_s (decode_r_src_index_s) ='0' and not_write_back_and_last_registers_state_s (decode_r_dst_index_s) ='0'
+    else HAS_SRC when not_write_back_and_last_registers_state_s (decode_r_src_index_s) ='0'
+    else HAS_DST when not_write_back_and_last_registers_state_s (decode_r_dst_index_s) = '0'
+    else HAS_NONE;
+
 
 
     decode_r_dst_selection_out  <= decode_r_dst_selection_s;

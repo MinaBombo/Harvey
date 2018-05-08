@@ -25,6 +25,8 @@ class Assembler {
             "NOP",  "ADD",  "SUB",  "AND", "OR",  "RLC", "RRC", "SHL",
             "SHR",  "SETC", "CLRC", "NOT", "INC", "DEC",
 
+            "NA", "NA",
+
             "MOV", "MUL", "PUSH", "POP", "OUT", "IN",  "JZ",  "JN",
             "JC",  "JMP", "CALL", "RET", "RTI", "LDM", "LDD", "STD"
     );
@@ -42,6 +44,7 @@ class Assembler {
     private static final Integer PC_CACHE_INDEX = 0, INT_CACHE_INDEX = 1;
     private static String[] mInstructionsCache = new String[CHACHE_H], mDataCache = new String[CHACHE_H];
     private static int mInstructionsCacheIndex = 0, mDataCacheIndex = INT_CACHE_INDEX + 1;
+    private static boolean mStartFromZero;
     private static final String INITIAL_CACHE_VALUE = String.format("%0" + CHACHE_W + "d", 0);
     private static final String NO_REG = new String(new char[3]).replace("\0", "0");
     private static final String NOT_USED_BITS = new String(new char[5]).replace("\0", "0");
@@ -55,8 +58,9 @@ class Assembler {
         }
     }
 
-    void CompileFile(String inpFilename, String memoryFolder){
+    void CompileFile(String inpFilename, String memoryFolder, String loadPc){
         try{
+            mStartFromZero = Boolean.parseBoolean(loadPc);
             File inpFile  = new File(inpFilename);
             File instructionsFile = Paths.get(
                     inpFilename.substring(0, inpFilename.lastIndexOf('.'))
@@ -102,9 +106,12 @@ class Assembler {
         String line;
 
         line = mReader.readLine();
+        int pcStartingAddress = Integer.parseInt(line.replaceAll("\\D.*", ""));
         mDataCache[PC_CACHE_INDEX]  = String.format("%16s",
-                Integer.toBinaryString(Integer.parseInt(line.replaceAll("\\D.*", ""))))
-                .replace(' ', '0');
+                Integer.toBinaryString(pcStartingAddress)).replace(' ', '0');
+        if(!mStartFromZero)
+            mInstructionsCacheIndex = pcStartingAddress;
+
         System.out.println("PC starting address: " + mDataCache[PC_CACHE_INDEX]);
 
         line = mReader.readLine();
@@ -133,8 +140,11 @@ class Assembler {
                 if(line.charAt(0) == '.'){
                     break;
                 }
-                for(String parsedLine : Objects.requireNonNull(parseLine(line))){
-                    mInstructionsCache[mInstructionsCacheIndex++] = parsedLine;
+                String parsedLines[] = parseLine(line);
+                if(parsedLines != null) {
+                    for (String parsedLine : parsedLines) {
+                        mInstructionsCache[mInstructionsCacheIndex++] = parsedLine;
+                    }
                 }
             }
         }
@@ -164,7 +174,13 @@ class Assembler {
         if(line.length() == 0)
             return null;
 
+        while (line.contains("  ")) {
+            line = line.replace("  ", " ");
+        }
+
         String lineWithoutComment = line.split(";")[0];
+        if(lineWithoutComment.isEmpty())
+            return null;
         String codeParts[] = lineWithoutComment.split(" ");
         String instruction = codeParts[0];
         String operands[] = null;
@@ -188,7 +204,7 @@ class Assembler {
             // Single operands in dst with NO imm or ea
         else if(instr.matches("\\b(?i)(r[l|r]c|pop|out|in|not|(in|de)c|j[z|n|c]|jmp|call)\\b"))
             return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + NO_REG
+                    + parseOperand(operands[0])
                     + parseOperand(operands[0])
                     + NOT_USED_BITS
             };
@@ -196,7 +212,7 @@ class Assembler {
             // Single operands in dst with imm or ea
         else if(instr.matches("\\b(?i)(ld[d|m])\\b"))
             return new String [] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
-                    + NO_REG
+                    + parseOperand(operands[0])
                     + parseOperand(operands[0])
                     + NOT_USED_BITS,
 
@@ -208,7 +224,7 @@ class Assembler {
         else if(instr.matches("\\b(?i)(push)\\b"))
             return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
                     + parseOperand(operands[0])
-                    + NO_REG
+                    + parseOperand(operands[0])
                     + NOT_USED_BITS
             };
 
@@ -216,7 +232,7 @@ class Assembler {
         else if(instr.matches("\\b(?i)(std)\\b"))
             return new String[] { Integer.toBinaryString(size5 | Operations.indexOf(instr.toUpperCase())).substring(1)
                     + parseOperand(operands[0])
-                    + NO_REG
+                    + parseOperand(operands[0])
                     + NOT_USED_BITS,
 
                     String.format("%16s", Integer.toBinaryString(Integer.parseInt(operands[1].replaceAll("\\D.*", ""))))
@@ -270,11 +286,11 @@ class Assembler {
 class main {
     public static void main(String[] args) {
 
-        if (args.length < 2) {
-            System.out.println("Usage Assembler: filename memory-folder");
+        if (args.length < 3) {
+            System.out.println("Usage Assembler: filename memory-folder load-pc");
             System.exit(1);
         }
 
-        new Assembler().CompileFile(args[0], args[1]);
+        new Assembler().CompileFile(args[0], args[1], args[2]);
     }
 }

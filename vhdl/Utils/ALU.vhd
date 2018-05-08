@@ -24,8 +24,8 @@ begin
     else std_logic_vector(unsigned('0'&data1_in) - unsigned('0'&data2_in)) when alu_instruction_in = ALU_OP_SUB
     else '0'&(data1_in and data2_in) when alu_instruction_in = ALU_OP_AND
     else '0'&(data1_in or data2_in) when alu_instruction_in = ALU_OP_OR
-    else '0'&data1_in(15 downto 1)&flags_in(FLAG_CARRY_INDEX) when alu_instruction_in = ALU_OP_RLC
-    else '0'&flags_in(FLAG_CARRY_INDEX)&data1_in(14 downto 0) when alu_instruction_in = ALU_OP_RRC
+    else data1_in(15 downto 0)&flags_in(FLAG_CARRY_INDEX) when alu_instruction_in = ALU_OP_RLC
+    else data1_in(0)&flags_in(FLAG_CARRY_INDEX)&data1_in(15 downto 1) when alu_instruction_in = ALU_OP_RRC
     else std_logic_vector(SHIFT_LEFT(unsigned('0'&data1_in), to_integer(unsigned(data2_in)))) when alu_instruction_in = ALU_OP_SHL
     else std_logic_vector(SHIFT_RIGHT(unsigned('0'&data1_in), to_integer(unsigned(data2_in)))) when alu_instruction_in = ALU_OP_SHR
     else (others => 'Z') when alu_instruction_in = ALU_OP_SETC
