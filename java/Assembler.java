@@ -43,7 +43,7 @@ class Assembler {
     private static final Integer CHACHE_H = 512, CHACHE_W = 16;
     private static final Integer PC_CACHE_INDEX = 0, INT_CACHE_INDEX = 1;
     private static String[] mInstructionsCache = new String[CHACHE_H], mDataCache = new String[CHACHE_H];
-    private static int mInstructionsCacheIndex = 0, mDataCacheIndex = INT_CACHE_INDEX + 1;
+    private static int mInstructionsCacheIndex = 0, mDataCacheIndex   = INT_CACHE_INDEX + 1;
     private static boolean mStartFromZero;
     private static final String INITIAL_CACHE_VALUE = String.format("%0" + CHACHE_W + "d", 0);
     private static final String NO_REG = new String(new char[3]).replace("\0", "0");

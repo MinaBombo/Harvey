@@ -68,7 +68,7 @@ begin
             end if;
         end process ; -- Interrupt_Logic
 
-        Buffer_Logic : process( clk_c )
+        Buffer_Logic : process( clk_c,reset_in )
         begin
             if (reset_in = '1') then 
                 enable_memory_s <= '0';
@@ -81,10 +81,10 @@ begin
                 is_return_s <= '0';
                 immediate_fetched_s <= FETCHED;
             elsif (rising_edge(clk_c)) then
-                if(input_word_type_in /= WORD_TYPE_INSTRUCTION or immediate_fetched_s = NOT_FETCHED) then
-                    immediate_fetched_s <= not immediate_fetched_s;
-                end if;
                 if (enable_in = '1')then
+                    if(input_word_type_in /= WORD_TYPE_INSTRUCTION or immediate_fetched_s = NOT_FETCHED) then
+                        immediate_fetched_s <= not immediate_fetched_s;
+                    end if;
                     if(immediate_fetched_s = FETCHED) then
                         enable_memory_s <= enable_memory_in;
                         memory_read_write_s <= memory_read_write_in;

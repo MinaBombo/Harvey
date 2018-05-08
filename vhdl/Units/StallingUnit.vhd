@@ -27,8 +27,18 @@ architecture stalling_unit_arch of StallingUnit is
             data_out : out std_logic
         );
     end component;
+    component BitFlipFlop is
+        port (
+            clk_c, reset_in : in std_logic;
+            data_in : in std_logic;
+    
+            data_out : out std_logic
+        );
+    end component;
 
     signal reset_fetch_decode_buffer_s, reset_decode_execute_buffer_s, reset_execute_memory_buffer_s : std_logic;
+    signal enable_execute_stage_s , enable_pc_inc_s,enable_fetch_decode_buffer_s,enable_decode_execute_buffer_s : std_logic;
+    signal not_clk_c : std_logic;
 begin
     Fetch_Decode_Delay_Buffer : oneBitHalfCycleRegister port map (
         clk_c => clk_c, reset_in => global_reset_in, data_in => reset_fetch_decode_buffer_s,
@@ -42,29 +52,47 @@ begin
     );
     Execute_Memory_Delay_Buffer : oneBitHalfCycleRegister port map (
         clk_c => clk_c, reset_in => global_reset_in, data_in => reset_execute_memory_buffer_s,
-
         data_out => reset_execute_memory_buffer_out
     );
 
-    enable_pc_inc_out <= '0' when cu_stall_stage_index_in /= NO_STALL or fu_stall_stage_index_in /= NO_STALL
+    not_clk_c <= not clk_c;
+    Enable_Execute_Stage_Buffer : BitFlipFlop port map (
+        clk_c => not_clk_c , reset_in => global_reset_in, data_in => enable_execute_stage_s,
+        data_out => enable_execute_stage
+    );
+    Enable_PC_Inc_Buffer : BitFlipFlop port map (
+        clk_c => not_clk_c , reset_in => global_reset_in, data_in => enable_pc_inc_s,
+        data_out => enable_pc_inc_out
+    );
+    Enable_Fetch_Decode_Buffer_Buffer : BitFlipFlop port map (
+        clk_c => not_clk_c , reset_in => global_reset_in, data_in => enable_fetch_decode_buffer_s,
+        data_out => enable_fetch_decode_buffer_out
+    );
+
+    Enable_Decode_Execute_Buffer_Buffer : BitFlipFlop port map (
+        clk_c => not_clk_c , reset_in => global_reset_in, data_in => enable_decode_execute_buffer_s,
+        data_out => enable_decode_execute_buffer_out
+    );
+
+    enable_pc_inc_s <= '0' when fu_stall_stage_index_in /= NO_STALL
     else '1';  -- Will always stop pc if there is stall
 
-    enable_fetch_decode_buffer_out <= '0' when cu_stall_stage_index_in /= NO_STALL or fu_stall_stage_index_in /= NO_STALL
+    enable_fetch_decode_buffer_s <= '0' when cu_stall_stage_index_in /= NO_STALL or fu_stall_stage_index_in /= NO_STALL
     else '1';  -- Will always keep last fetch when there is stall
 
     -- At stall[stage] we keep all buffers before stage as is (disable them)
     -- and flush the next buffer only (reset)
     -- reset will override enable
-    reset_fetch_decode_buffer_s <= '1' when ((cu_stall_stage_index_in = CU_STALL_FETCH or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) or global_reset_in = '1')
+    reset_fetch_decode_buffer_s <= '1' when ((cu_stall_stage_index_in /= NO_STALL ) or global_reset_in = '1')
     else '0';
     reset_decode_execute_buffer_s <= '1' 
-    when (((cu_stall_stage_index_in = STALL_DECODE or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) xor fu_stall_stage_index_in = STALL_DECODE) or global_reset_in = '1')
-    else 'Z' when (cu_stall_stage_index_in = STALL_DECODE or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) and fu_stall_stage_index_in = STALL_DECODE
+    when (((cu_stall_stage_index_in = CU_STALL_FETCH or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) xor fu_stall_stage_index_in = STALL_DECODE) or global_reset_in = '1'or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE)
+    else 'Z' when (cu_stall_stage_index_in = CU_STALL_FETCH or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE) and fu_stall_stage_index_in = STALL_DECODE
     else '0';
-    reset_execute_memory_buffer_s <= '1' when fu_stall_stage_index_in = FU_STALL_EXECUTE or global_reset_in = '1'or immediate_fetched_in = NOT_FETCHED
+    reset_execute_memory_buffer_s <= '1' when fu_stall_stage_index_in = FU_STALL_EXECUTE or global_reset_in = '1'or immediate_fetched_in = NOT_FETCHED or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE
     else '0' ;
-    enable_execute_stage <= '0' when fu_stall_stage_index_in = FU_STALL_EXECUTE or immediate_fetched_in = NOT_FETCHED else '1';
-    enable_decode_execute_buffer_out <= '0' when fu_stall_stage_index_in = FU_STALL_EXECUTE
+    enable_execute_stage_s <= '0' when fu_stall_stage_index_in = FU_STALL_EXECUTE or immediate_fetched_in = NOT_FETCHED or cu_stall_stage_index_in = CU_STALL_FETCH_AND_DECODE else '1';
+    enable_decode_execute_buffer_s <= '0' when fu_stall_stage_index_in = FU_STALL_EXECUTE
     else '1';
 end stalling_unit_arch ; -- stalling_unit_arch
 
