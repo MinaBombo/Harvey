@@ -1,2 +1,2 @@
 # Harvey
-A Harvard-architecture-based 5-stages pipelined microprocessor
+A Harvard-architecture-based 5-stages pipeline microprocessor
